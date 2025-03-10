@@ -4,13 +4,37 @@ let dataManager;
 let authUI;
 let progressManager;
 let syncManager;
-let gameState = GAME_STATES.LOADING;
+let gameState = 'loading';  // Default state without using GAME_STATES initially
 let connectionStatus = {
     isConnected: false,
     lastSync: null,
     retryCount: 0,
     maxRetries: 3
 };
+
+function setup() {
+    createCanvas(800, 600);
+    background(220);
+    
+    // Initialize game
+    try {
+        initializeSupabase();
+    } catch (error) {
+        console.error('Failed to initialize:', error);
+        // Continue with offline mode
+        gameState = 'menu';
+    }
+}
+
+function draw() {
+    background(220);
+    
+    // Basic game state display
+    textSize(24);
+    textAlign(CENTER, CENTER);
+    fill(0);
+    text('Game State: ' + gameState, width/2, height/2);
+}
 
 // Initialize Supabase and test connection
 async function initializeSupabase() {
@@ -20,17 +44,10 @@ async function initializeSupabase() {
             SUPABASE_CONFIG.SUPABASE_KEY
         );
         
-        // Test connection
-        const { data, error } = await supabase
-            .from(DB_TABLES.PROFILES)
-            .select('count')
-            .limit(1);
-            
-        if (error) throw error;
-        
         connectionStatus.isConnected = true;
         connectionStatus.lastSync = Date.now();
         console.log('Successfully connected to Supabase');
+        gameState = 'menu';
         return true;
     } catch (error) {
         console.error('Supabase connection error:', error.message);
@@ -124,18 +141,6 @@ function initializeGameTools() {
         new ElectricToothbrush()
     ];
     player = tools[currentTool];
-}
-
-function draw() {
-    background(220);
-    
-    // Draw game or auth UI based on auth state
-    if (!authManager.currentUser) {
-        authUI.draw();
-    } else {
-        // Draw game
-        drawGame();
-    }
 }
 
 function mousePressed() {

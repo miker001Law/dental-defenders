@@ -1,7 +1,7 @@
 // Supabase Configuration
 const SUPABASE_CONFIG = {
-    SUPABASE_URL: process.env.SUPABASE_URL || 'https://your-project.supabase.co',
-    SUPABASE_KEY: process.env.SUPABASE_KEY || 'your-anon-key-here'
+    SUPABASE_URL: 'your-project.supabase.co',  // Replace with your actual Supabase URL
+    SUPABASE_KEY: 'your-anon-key'  // Replace with your actual public anon key
 };
 
 // Game States
