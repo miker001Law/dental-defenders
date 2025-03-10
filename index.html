@@ -14,7 +14,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/addons/p5.sound.min.js"></script>
     <script src="config.js"></script>
     <script src="gameEntities.js"></script>
-    <script src="sketch.js"></script>
     <style>
         body {
             margin: 0;
@@ -25,12 +24,12 @@
             min-height: 100vh;
             background-color: #f0f0f0;
         }
-        main {
-            display: flex;
-            justify-content: center;
-            align-items: center;
+        #game-container {
+            position: relative;
             width: 800px;
             height: 600px;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
         canvas {
             border: 2px solid #333;
@@ -40,6 +39,7 @@
     </style>
 </head>
 <body>
-    <main id="game-container"></main>
+    <div id="game-container"></div>
+    <script src="sketch.js"></script>
 </body>
 </html>

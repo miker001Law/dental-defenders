@@ -325,12 +325,16 @@ function setup() {
     console.log('Setting up canvas...');
     let canvas = createCanvas(800, 600);
     canvas.parent('game-container');
+    
+    // Set up basic drawing parameters
     frameRate(60);
-    console.log('Canvas setup complete');
+    imageMode(CENTER);
+    rectMode(CENTER);
+    textAlign(CENTER, CENTER);
     
     // Initialize game
     game = new GameState();
-    console.log('Game initialized in menu state');
+    console.log('Game initialized');
 }
 
 // Initialize sound system on first user interaction
