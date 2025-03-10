@@ -14,16 +14,6 @@ let connectionStatus = {
 let game;
 let sounds = {};
 
-function preload() {
-    // Load sounds
-    soundFormats('wav');
-    sounds.shoot = loadSound('assets/sounds/pop.wav');
-    sounds.collect = loadSound('assets/sounds/coin-collect.wav');
-    sounds.levelUp = loadSound('assets/sounds/level-up.wav');
-    sounds.win = loadSound('assets/sounds/win.wav');
-    sounds.hit = loadSound('assets/sounds/cheer.wav');
-}
-
 function setup() {
     console.log('Setting up canvas...');
     let canvas = createCanvas(800, 600);
@@ -136,7 +126,6 @@ function updateGame() {
     // Check for game over
     if (game.player.health <= 0) {
         gameState = 'gameOver';
-        sounds.hit.play();
     }
 }
 
@@ -148,13 +137,11 @@ function mousePressed() {
         case 'menu':
             gameState = 'playing';
             game = new GameState();
-            sounds.levelUp.play();
             console.log('Game started');
             break;
         case 'playing':
             // Shoot projectile
             game.projectiles.push(new Projectile(game.player.x, game.player.y));
-            sounds.shoot.play();
             console.log('Shot fired');
             break;
         case 'gameOver':

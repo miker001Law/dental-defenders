@@ -5,15 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dental Defense Game</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/addons/p5.sound.min.js"></script>
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    <script>
-        window.onload = function() {
-            console.log('Window loaded');
-            window.supabaseClient = supabase.createClient;
-            console.log('Supabase client initialized');
-        }
-    </script>
     <script src="config.js"></script>
     <script src="gameEntities.js"></script>
     <script src="sketch.js"></script>
@@ -43,14 +34,5 @@
 </head>
 <body>
     <main id="game-container"></main>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM fully loaded');
-            const gameContainer = document.getElementById('game-container');
-            gameContainer.addEventListener('click', function(e) {
-                console.log('Click detected on game container');
-            });
-        });
-    </script>
 </body>
 </html>
