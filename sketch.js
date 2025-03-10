@@ -82,16 +82,24 @@ function setup() {
     // Initialize game
     game = new GameState();
     console.log('Game initialized in menu state');
-    
-    // Initialize sound system
-    try {
-        userStartAudio().then(() => {
-            loadGameSounds();
-        }).catch(error => {
-            console.warn('Audio system initialization failed:', error);
-        });
-    } catch (error) {
-        console.warn('Audio setup failed:', error);
+}
+
+// Initialize sound system on first user interaction
+function initializeAudio() {
+    if (!window.audioInitialized) {
+        window.audioInitialized = true;
+        console.log('Initializing audio system...');
+        
+        try {
+            userStartAudio().then(() => {
+                loadGameSounds();
+                console.log('Audio system initialized');
+            }).catch(error => {
+                console.warn('Audio system initialization failed:', error);
+            });
+        } catch (error) {
+            console.warn('Audio setup failed:', error);
+        }
     }
 }
 
@@ -222,6 +230,9 @@ function resetGame() {
 function mousePressed() {
     console.log('Mouse pressed event triggered');
     console.log('Current state:', gameState);
+    
+    // Initialize audio on first interaction
+    initializeAudio();
     
     switch(gameState) {
         case 'menu':
