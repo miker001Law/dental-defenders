@@ -13,51 +13,45 @@ let connectionStatus = {
 };
 
 function setup() {
-    createCanvas(800, 600);
-    background(220);
-    
-    // Initialize game components
+    let canvas = createCanvas(800, 600);
+    canvas.parent('main');
+    frameRate(60);
     initializeGame();
 }
 
 async function initializeGame() {
     try {
-        // Initialize Supabase
-        supabase = createClient(
-            SUPABASE_CONFIG.SUPABASE_URL,
-            SUPABASE_CONFIG.SUPABASE_KEY
-        );
-        
-        connectionStatus.isConnected = true;
-        connectionStatus.lastSync = Date.now();
-        console.log('Successfully connected to Supabase');
-        
-        // Initialize managers
-        authManager = new AuthManager(supabase);
-        dataManager = new GameDataManager(supabase);
-        progressManager = new ProgressManager(supabase);
-        syncManager = new SyncManager();
-        
-        // Start auto-sync if connected
-        if (connectionStatus.isConnected) {
-            dataManager.startAutoSync();
-            syncManager.startAutoSync();
+        if (window.supabaseClient) {
+            supabase = window.supabaseClient(
+                SUPABASE_CONFIG.SUPABASE_URL,
+                SUPABASE_CONFIG.SUPABASE_KEY
+            );
+            
+            connectionStatus.isConnected = true;
+            connectionStatus.lastSync = Date.now();
+            console.log('Successfully connected to Supabase');
+            
+            // Initialize managers
+            authManager = new AuthManager(supabase);
+            dataManager = new GameDataManager(supabase);
+            progressManager = new ProgressManager(supabase);
+            syncManager = new SyncManager();
+            
+            gameState = 'menu';
+        } else {
+            console.error('Supabase client not initialized');
+            gameState = 'error';
         }
-        
-        // Set initial game state
-        gameState = 'menu';
-        
     } catch (error) {
         console.error('Failed to initialize:', error);
-        gameState = 'menu';  // Fall back to menu even if initialization fails
+        gameState = 'error';
     }
 }
 
 function draw() {
     background(220);
     
-    // Basic game state display
-    textSize(24);
+    textSize(32);
     textAlign(CENTER, CENTER);
     fill(0);
     
@@ -66,10 +60,14 @@ function draw() {
             text('Loading...', width/2, height/2);
             break;
         case 'menu':
-            text('Menu\nClick to Start', width/2, height/2);
+            text('Dental Defenders\n\nClick to Start', width/2, height/2);
             break;
         case 'playing':
-            text('Game Running', width/2, height/2);
+            text('Game Running\n\nClick anywhere to return to menu', width/2, height/2);
+            break;
+        case 'error':
+            fill(255, 0, 0);
+            text('Error Loading Game\n\nPlease refresh the page', width/2, height/2);
             break;
         default:
             text(gameState, width/2, height/2);
@@ -79,6 +77,8 @@ function draw() {
 function mousePressed() {
     if (gameState === 'menu') {
         gameState = 'playing';
+    } else if (gameState === 'playing') {
+        gameState = 'menu';
     }
 }
 
