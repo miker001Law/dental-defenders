@@ -1,6 +1,6 @@
 // Supabase Configuration
 const SUPABASE_CONFIG = {
-    SUPABASE_URL: 'your-project.supabase.co',  // Replace with your actual Supabase URL
+    SUPABASE_URL: 'https://your-project.supabase.co',  // Replace with your actual Supabase URL (include https://)
     SUPABASE_KEY: 'your-anon-key'  // Replace with your actual public anon key
 };
 

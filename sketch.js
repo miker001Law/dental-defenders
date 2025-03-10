@@ -4,7 +4,7 @@ let dataManager;
 let authUI;
 let progressManager;
 let syncManager;
-let gameState = 'loading';  // Default state without using GAME_STATES initially
+let gameState = 'loading';
 let connectionStatus = {
     isConnected: false,
     lastSync: null,
@@ -16,13 +16,40 @@ function setup() {
     createCanvas(800, 600);
     background(220);
     
-    // Initialize game
+    // Initialize game components
+    initializeGame();
+}
+
+async function initializeGame() {
     try {
-        initializeSupabase();
+        // Initialize Supabase
+        supabase = createClient(
+            SUPABASE_CONFIG.SUPABASE_URL,
+            SUPABASE_CONFIG.SUPABASE_KEY
+        );
+        
+        connectionStatus.isConnected = true;
+        connectionStatus.lastSync = Date.now();
+        console.log('Successfully connected to Supabase');
+        
+        // Initialize managers
+        authManager = new AuthManager(supabase);
+        dataManager = new GameDataManager(supabase);
+        progressManager = new ProgressManager(supabase);
+        syncManager = new SyncManager();
+        
+        // Start auto-sync if connected
+        if (connectionStatus.isConnected) {
+            dataManager.startAutoSync();
+            syncManager.startAutoSync();
+        }
+        
+        // Set initial game state
+        gameState = 'menu';
+        
     } catch (error) {
         console.error('Failed to initialize:', error);
-        // Continue with offline mode
-        gameState = 'menu';
+        gameState = 'menu';  // Fall back to menu even if initialization fails
     }
 }
 
@@ -33,7 +60,26 @@ function draw() {
     textSize(24);
     textAlign(CENTER, CENTER);
     fill(0);
-    text('Game State: ' + gameState, width/2, height/2);
+    
+    switch(gameState) {
+        case 'loading':
+            text('Loading...', width/2, height/2);
+            break;
+        case 'menu':
+            text('Menu\nClick to Start', width/2, height/2);
+            break;
+        case 'playing':
+            text('Game Running', width/2, height/2);
+            break;
+        default:
+            text(gameState, width/2, height/2);
+    }
+}
+
+function mousePressed() {
+    if (gameState === 'menu') {
+        gameState = 'playing';
+    }
 }
 
 // Initialize Supabase and test connection
@@ -87,37 +133,6 @@ function enableOfflineMode() {
     // Load cached data if available
 }
 
-async function setup() {
-    createCanvas(800, 600);
-    gameState = GAME_STATES.LOADING;
-    
-    // Initialize Supabase
-    const connected = await initializeSupabase();
-    if (!connected) {
-        showErrorMessage(ERROR_MESSAGES.CONNECTION);
-    }
-    
-    // Initialize managers only if connected
-    if (connectionStatus.isConnected) {
-        authManager = new AuthManager(supabase);
-        dataManager = new GameDataManager(supabase);
-        progressManager = new ProgressManager(supabase);
-        syncManager = new SyncManager();
-        
-        // Start auto-sync
-        dataManager.startAutoSync();
-        syncManager.startAutoSync();
-    }
-    
-    // Initialize UI and game components
-    createPlaceholderIcons();
-    initializeInputFields();
-    initializeGameTools();
-    
-    // Set initial game state
-    gameState = connectionStatus.isConnected ? GAME_STATES.AUTH : GAME_STATES.MENU;
-}
-
 function initializeInputFields() {
     inputFields = {
         email: createInput(''),
@@ -141,15 +156,6 @@ function initializeGameTools() {
         new ElectricToothbrush()
     ];
     player = tools[currentTool];
-}
-
-function mousePressed() {
-    if (!authManager.currentUser) {
-        authUI.handleClick(mouseX, mouseY);
-    } else {
-        // Handle game clicks
-        handleGameClick();
-    }
 }
 
 // Clean up when the game closes
