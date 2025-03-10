@@ -16,11 +16,13 @@ function setup() {
     let canvas = createCanvas(800, 600);
     canvas.parent('main');
     frameRate(60);
+    console.log('Canvas created and setup complete');
     initializeGame();
 }
 
 async function initializeGame() {
     try {
+        console.log('Starting game initialization...');
         if (window.supabaseClient) {
             supabase = window.supabaseClient(
                 SUPABASE_CONFIG.SUPABASE_URL,
@@ -38,6 +40,7 @@ async function initializeGame() {
             syncManager = new SyncManager();
             
             gameState = 'menu';
+            console.log('Game initialized, current state:', gameState);
         } else {
             console.error('Supabase client not initialized');
             gameState = 'error';
@@ -75,17 +78,28 @@ function draw() {
 }
 
 function mousePressed() {
-    console.log('Mouse pressed. Current state:', gameState);
+    console.log('Mouse pressed event triggered');
+    console.log('Current game state:', gameState);
     
     if (gameState === 'menu') {
-        console.log('Changing from menu to playing');
+        console.log('Transitioning from menu to playing state');
         gameState = 'playing';
     } else if (gameState === 'playing') {
-        console.log('Changing from playing to menu');
+        console.log('Transitioning from playing to menu state');
         gameState = 'menu';
     }
     
-    // Prevent default browser behavior
+    console.log('New game state:', gameState);
+    return false;
+}
+
+function mouseClicked() {
+    console.log('Mouse clicked event detected');
+    return false;
+}
+
+function touchStarted() {
+    console.log('Touch event detected');
     return false;
 }
 
