@@ -121,6 +121,18 @@ function updateGame() {
     // Draw game
     game.draw();
     
+    // Debug info in console
+    if (frameCount % 60 === 0) { // Log every second
+        console.log('Game State:', {
+            playerPos: { x: game.player.x, y: game.player.y },
+            monsters: game.monsters.length,
+            projectiles: game.projectiles.length,
+            powerUps: game.powerUps.length,
+            score: game.score,
+            health: game.player.health
+        });
+    }
+    
     // Check for game over
     if (game.player.health <= 0) {
         gameState = 'gameOver';
@@ -137,14 +149,17 @@ function mousePressed() {
             gameState = 'playing';
             game = new GameState();
             sounds.levelUp.play();
+            console.log('Game started');
             break;
         case 'playing':
             // Shoot projectile
             game.projectiles.push(new Projectile(game.player.x, game.player.y));
             sounds.shoot.play();
+            console.log('Shot fired');
             break;
         case 'gameOver':
             gameState = 'menu';
+            console.log('Returning to menu');
             break;
     }
     
@@ -152,11 +167,14 @@ function mousePressed() {
 }
 
 function keyPressed() {
+    console.log('Key pressed:', key);
     if (key === 'p' || key === 'P') {
         if (gameState === 'playing') {
             gameState = 'paused';
+            console.log('Game paused');
         } else if (gameState === 'paused') {
             gameState = 'playing';
+            console.log('Game resumed');
         }
     }
     return false;

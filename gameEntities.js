@@ -239,10 +239,15 @@ class GameState {
         fill(0);
         textSize(20);
         textAlign(LEFT);
-        text(\`Score: \${this.score}\`, 10, 30);
-        text(\`Level: \${this.level}\`, 10, 60);
-        text(\`Health: \${this.player.health}\`, 10, 90);
-        text(\`Tool: \${this.player.currentTool}\`, 10, 120);
+        text('Score: ' + this.score, 10, 30);
+        text('Level: ' + this.level, 10, 60);
+        text('Health: ' + this.player.health, 10, 90);
+        text('Tool: ' + this.player.currentTool, 10, 120);
+        
+        // Debug info
+        text('Monsters: ' + this.monsters.length, 10, 150);
+        text('Projectiles: ' + this.projectiles.length, 10, 180);
+        text('Power-ups: ' + this.powerUps.length, 10, 210);
         pop();
     }
 } 
