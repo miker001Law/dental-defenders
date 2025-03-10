@@ -14,6 +14,20 @@ let connectionStatus = {
 let game;
 let sounds = {};
 
+function preload() {
+    // Load sounds
+    soundFormats('mp3');
+    try {
+        sounds.shoot = loadSound('https://raw.githubusercontent.com/miker001Law/dental-defenders/main/assets/sounds/shoot.mp3');
+        sounds.collect = loadSound('https://raw.githubusercontent.com/miker001Law/dental-defenders/main/assets/sounds/collect.mp3');
+        sounds.hit = loadSound('https://raw.githubusercontent.com/miker001Law/dental-defenders/main/assets/sounds/hit.mp3');
+        sounds.gameOver = loadSound('https://raw.githubusercontent.com/miker001Law/dental-defenders/main/assets/sounds/gameover.mp3');
+        console.log('Sounds loaded successfully');
+    } catch (error) {
+        console.warn('Sound loading failed:', error);
+    }
+}
+
 function setup() {
     console.log('Setting up canvas...');
     let canvas = createCanvas(800, 600);
@@ -24,6 +38,13 @@ function setup() {
     // Initialize game
     game = new GameState();
     console.log('Game initialized in menu state');
+    
+    // Set sound volumes
+    Object.values(sounds).forEach(sound => {
+        if (sound && sound.setVolume) {
+            sound.setVolume(0.5);
+        }
+    });
 }
 
 function draw() {
@@ -105,13 +126,19 @@ function drawError() {
 
 function updateGame() {
     // Update game state
+    let previousHealth = game.player.health;
     game.update();
+    
+    // Check for health loss
+    if (game.player.health < previousHealth) {
+        if (sounds.hit) sounds.hit.play();
+    }
     
     // Draw game
     game.draw();
     
     // Debug info in console
-    if (frameCount % 60 === 0) { // Log every second
+    if (frameCount % 60 === 0) {
         console.log('Game State:', {
             playerPos: { x: game.player.x, y: game.player.y },
             monsters: game.monsters.length,
@@ -125,6 +152,7 @@ function updateGame() {
     // Check for game over
     if (game.player.health <= 0) {
         gameState = 'gameOver';
+        if (sounds.gameOver) sounds.gameOver.play();
     }
 }
 
@@ -136,15 +164,18 @@ function mousePressed() {
         case 'menu':
             gameState = 'playing';
             game = new GameState();
+            if (sounds.collect) sounds.collect.play();
             console.log('Game started');
             break;
         case 'playing':
             // Shoot projectile
             game.projectiles.push(new Projectile(game.player.x, game.player.y));
+            if (sounds.shoot) sounds.shoot.play();
             console.log('Shot fired');
             break;
         case 'gameOver':
             gameState = 'menu';
+            if (sounds.collect) sounds.collect.play();
             console.log('Returning to menu');
             break;
     }
