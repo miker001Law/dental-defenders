@@ -14,22 +14,10 @@ let connectionStatus = {
 let game;
 let sounds = {};
 let sprites = {};
+let loadingComplete = false;
 
 function preload() {
-    // Load enemy sprites with error handling
-    const spriteUrls = {
-        foodParticleA: 'https://i.imgur.com/IyNI9ef.png',
-        foodParticleB: 'https://i.imgur.com/lcw8rTI.png',
-        sugarCrystalA: 'https://i.imgur.com/gctFhAV.png',
-        sugarCrystalB: 'https://i.imgur.com/ITuCGKM.png',
-        plaqueBugA: 'https://i.imgur.com/vNptk1S.png',
-        plaqueBugB: 'https://i.imgur.com/Xl8yMmN.png',
-        cavityBugA: 'https://i.imgur.com/JozuFWL.png',
-        cavityBugB: 'https://i.imgur.com/x7UILxw.png',
-        sugarBugA: 'https://i.imgur.com/RgVqSTG.png',
-        sugarBugB: 'https://i.imgur.com/NuVgQJ9.png'
-    };
-
+    gameState = 'loading';  // Force loading state
     console.log('Loading sprites...');
     
     // Create default colored rectangle as fallback
@@ -46,33 +34,46 @@ function preload() {
         return img;
     };
 
-    // Load all sprites with Promise.all
-    Promise.all(
-        Object.entries(spriteUrls).map(([key, url]) => {
-            return new Promise((resolve) => {
-                let img = createImg(url, '', () => {
-                    sprites[key] = loadImage(img.elt.src, () => {
-                        console.log(`Successfully loaded sprite: ${key}`);
-                        img.remove();
-                        resolve();
-                    }, () => {
-                        console.error(`Failed to load sprite ${key}`);
-                        sprites[key] = createFallbackSprite();
-                        img.remove();
-                        resolve();
-                    });
-                }, () => {
-                    console.error(`Failed to create img element for ${key}`);
-                    sprites[key] = createFallbackSprite();
-                    resolve();
-                });
-                img.hide(); // Hide the temporary image element
-            });
-        })
-    ).then(() => {
-        console.log('All sprites loaded or fallbacks created');
-    }).catch(error => {
-        console.error('Error in sprite loading:', error);
+    const spriteUrls = {
+        foodParticleA: 'https://i.imgur.com/IyNI9ef.png',
+        foodParticleB: 'https://i.imgur.com/lcw8rTI.png',
+        sugarCrystalA: 'https://i.imgur.com/gctFhAV.png',
+        sugarCrystalB: 'https://i.imgur.com/ITuCGKM.png',
+        plaqueBugA: 'https://i.imgur.com/vNptk1S.png',
+        plaqueBugB: 'https://i.imgur.com/Xl8yMmN.png',
+        cavityBugA: 'https://i.imgur.com/JozuFWL.png',
+        cavityBugB: 'https://i.imgur.com/x7UILxw.png',
+        sugarBugA: 'https://i.imgur.com/RgVqSTG.png',
+        sugarBugB: 'https://i.imgur.com/NuVgQJ9.png'
+    };
+
+    let loadedCount = 0;
+    const totalSprites = Object.keys(spriteUrls).length;
+
+    Object.entries(spriteUrls).forEach(([key, url]) => {
+        loadImage(
+            url,
+            (img) => {
+                console.log(`Successfully loaded sprite: ${key}`);
+                sprites[key] = img;
+                loadedCount++;
+                if (loadedCount === totalSprites) {
+                    console.log('All sprites loaded successfully');
+                    loadingComplete = true;
+                    gameState = 'menu';
+                }
+            },
+            () => {
+                console.error(`Failed to load sprite ${key}, using fallback`);
+                sprites[key] = createFallbackSprite();
+                loadedCount++;
+                if (loadedCount === totalSprites) {
+                    console.log('All sprites processed (some using fallbacks)');
+                    loadingComplete = true;
+                    gameState = 'menu';
+                }
+            }
+        );
     });
 }
 
@@ -181,10 +182,32 @@ function draw() {
 }
 
 function drawLoading() {
+    background(220);
     textSize(32);
     textAlign(CENTER, CENTER);
     fill(0);
-    text('Loading...', width/2, height/2);
+    text('Loading Game Assets...', width/2, height/2 - 40);
+    
+    // Draw loading bar
+    const barWidth = 300;
+    const barHeight = 20;
+    const progress = Object.keys(sprites).length / 10; // 10 total sprites
+    
+    // Draw border
+    noFill();
+    stroke(0);
+    rect(width/2 - barWidth/2, height/2 + 20, barWidth, barHeight);
+    
+    // Draw progress
+    noStroke();
+    fill(0, 100, 255);
+    rect(width/2 - barWidth/2, height/2 + 20, barWidth * progress, barHeight);
+    
+    // Draw percentage
+    fill(0);
+    noStroke();
+    textSize(16);
+    text(`${Math.floor(progress * 100)}%`, width/2, height/2 + 60);
 }
 
 function drawMenu() {
@@ -283,6 +306,11 @@ function mousePressed() {
     console.log('Mouse pressed event triggered');
     console.log('Current state:', gameState);
     
+    if (!loadingComplete) {
+        console.log('Still loading assets...');
+        return false;
+    }
+
     // Initialize audio on first interaction
     initializeAudio().then(() => {
         switch(gameState) {
@@ -293,10 +321,11 @@ function mousePressed() {
                 console.log('Game started');
                 break;
             case 'playing':
-                // Shoot projectile
-                game.projectiles.push(new Projectile(game.player.x, game.player.y));
-                if (sounds.shoot) sounds.shoot.play();
-                console.log('Shot fired');
+                if (game && game.projectiles) {
+                    game.projectiles.push(new Projectile(game.player.x, game.player.y));
+                    if (sounds.shoot) sounds.shoot.play();
+                    console.log('Shot fired');
+                }
                 break;
             case 'gameOver':
                 resetGame();
@@ -309,11 +338,15 @@ function mousePressed() {
         // Continue with game even if audio fails
         switch(gameState) {
             case 'menu':
-                resetGame();
-                gameState = 'playing';
+                if (loadingComplete) {
+                    resetGame();
+                    gameState = 'playing';
+                }
                 break;
             case 'playing':
-                game.projectiles.push(new Projectile(game.player.x, game.player.y));
+                if (game && game.projectiles) {
+                    game.projectiles.push(new Projectile(game.player.x, game.player.y));
+                }
                 break;
             case 'gameOver':
                 resetGame();
