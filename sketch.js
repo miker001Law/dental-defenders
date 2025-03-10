@@ -29,17 +29,46 @@ function preload() {
     sprites.sugarBugB = loadImage('https://i.imgur.com/NuVgQJ9.png');
     
     console.log('Loading sprites...');
+}
+
+// Separate sound loading from preload to make it optional
+function loadGameSounds() {
+    console.log('Attempting to load sounds...');
+    soundFormats('mp3');
     
-    // Load sounds
-    soundFormats('wav', 'mp3');
     try {
-        sounds.shoot = loadSound('assets/sounds/shoot.wav');
-        sounds.collect = loadSound('assets/sounds/collect.wav');
-        sounds.hit = loadSound('assets/sounds/hit.wav');
-        sounds.gameOver = loadSound('assets/sounds/gameover.wav');
-        console.log('Attempting to load sounds...');
+        // Create default silent sound for fallback
+        sounds.default = new p5.SoundFile();
+        
+        // Load game sounds with error handling for each
+        const soundFiles = {
+            shoot: 'shoot',
+            collect: 'collect',
+            hit: 'hit',
+            gameOver: 'gameover'
+        };
+
+        Object.entries(soundFiles).forEach(([key, filename]) => {
+            try {
+                sounds[key] = loadSound(
+                    `assets/sounds/${filename}.mp3`,
+                    () => console.log(`Loaded sound: ${key}`),
+                    () => {
+                        console.warn(`Failed to load sound: ${key}`);
+                        sounds[key] = sounds.default;
+                    }
+                );
+            } catch (e) {
+                console.warn(`Error loading sound ${key}:`, e);
+                sounds[key] = sounds.default;
+            }
+        });
     } catch (error) {
-        console.warn('Sound loading failed, continuing without sound:', error);
+        console.warn('Sound system initialization failed:', error);
+        // Set up silent fallback sounds
+        Object.keys(sounds).forEach(key => {
+            sounds[key] = sounds.default || { play: () => {} };
+        });
     }
 }
 
@@ -54,18 +83,16 @@ function setup() {
     game = new GameState();
     console.log('Game initialized in menu state');
     
-    // Initialize sound settings
-    userStartAudio(); // This helps with browser autoplay policies
-    
-    // Set sound volumes and check if sounds loaded
-    Object.entries(sounds).forEach(([name, sound]) => {
-        if (sound && sound.setVolume) {
-            sound.setVolume(0.3);
-            console.log(`Sound loaded successfully: ${name}`);
-        } else {
-            console.warn(`Sound not loaded: ${name}`);
-        }
-    });
+    // Initialize sound system
+    try {
+        userStartAudio().then(() => {
+            loadGameSounds();
+        }).catch(error => {
+            console.warn('Audio system initialization failed:', error);
+        });
+    } catch (error) {
+        console.warn('Audio setup failed:', error);
+    }
 }
 
 function draw() {
