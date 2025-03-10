@@ -17,16 +17,16 @@ let sprites = {};
 
 function preload() {
     // Load enemy sprites
-    sprites.foodParticleA = loadImage('https://imgur.com/IyNI9ef.png');
-    sprites.foodParticleB = loadImage('https://imgur.com/lcw8rTI.png');
-    sprites.sugarCrystalA = loadImage('https://imgur.com/gctFhAV.png');
-    sprites.sugarCrystalB = loadImage('https://imgur.com/ITuCGKM.png');
-    sprites.plaqueBugA = loadImage('https://imgur.com/vNptk1S.png');
-    sprites.plaqueBugB = loadImage('https://imgur.com/Xl8yMmN.png');
+    sprites.foodParticleA = loadImage('https://i.imgur.com/IyNI9ef.png');
+    sprites.foodParticleB = loadImage('https://i.imgur.com/lcw8rTI.png');
+    sprites.sugarCrystalA = loadImage('https://i.imgur.com/gctFhAV.png');
+    sprites.sugarCrystalB = loadImage('https://i.imgur.com/ITuCGKM.png');
+    sprites.plaqueBugA = loadImage('https://i.imgur.com/vNptk1S.png');
+    sprites.plaqueBugB = loadImage('https://i.imgur.com/Xl8yMmN.png');
     sprites.cavityBugA = loadImage('https://i.imgur.com/JozuFWL.png');
     sprites.cavityBugB = loadImage('https://i.imgur.com/x7UILxw.png');
-    sprites.sugarBugA = loadImage('https://imgur.com/RgVqSTG.png');
-    sprites.sugarBugB = loadImage('https://imgur.com/NuVgQJ9.png');
+    sprites.sugarBugA = loadImage('https://i.imgur.com/RgVqSTG.png');
+    sprites.sugarBugB = loadImage('https://i.imgur.com/NuVgQJ9.png');
     
     console.log('Loading sprites...');
     
