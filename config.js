@@ -1,23 +1,19 @@
-// Supabase Configuration
-const SUPABASE_CONFIG = {
-    SUPABASE_URL: 'https://your-project.supabase.co',  // Replace with your actual Supabase URL (include https://)
-    SUPABASE_KEY: 'your-anon-key'  // Replace with your actual public anon key
+// Game States
+const GAME_STATES = {
+    MENU: 'menu',
+    PLAYING: 'playing',
+    PAUSED: 'paused',
+    GAME_OVER: 'gameOver'
 };
 
 // Game Configuration
 const GAME_CONFIG = {
     OFFLINE_MODE: true,
-    DEBUG: true
-};
-
-// Game States
-const GAME_STATES = {
-    LOADING: 'loading',
-    MENU: 'menu',
-    PLAYING: 'playing',
-    PAUSED: 'paused',
-    GAME_OVER: 'gameOver',
-    ERROR: 'error'
+    DEBUG: true,
+    MONSTER_SPAWN_RATE: 100,
+    POWERUP_SPAWN_RATE: 500,
+    PLAYER_SPEED: 5,
+    PROJECTILE_SPEED: 7
 };
 
 // Database Tables

@@ -4,7 +4,7 @@ let dataManager;
 let authUI;
 let progressManager;
 let syncManager;
-let gameState = 'loading';
+let gameState = 'menu';  // Start directly in menu state
 let connectionStatus = {
     isConnected: false,
     lastSync: null,
@@ -23,7 +23,6 @@ function setup() {
     
     // Initialize game
     game = new GameState();
-    gameState = 'menu';
     console.log('Game initialized in menu state');
 }
 
