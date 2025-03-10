@@ -75,11 +75,18 @@ function draw() {
 }
 
 function mousePressed() {
+    console.log('Mouse pressed. Current state:', gameState);
+    
     if (gameState === 'menu') {
+        console.log('Changing from menu to playing');
         gameState = 'playing';
     } else if (gameState === 'playing') {
+        console.log('Changing from playing to menu');
         gameState = 'menu';
     }
+    
+    // Prevent default browser behavior
+    return false;
 }
 
 // Initialize Supabase and test connection
