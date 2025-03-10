@@ -26,6 +26,8 @@ class GameState {
         this.powerUps = [];
         this.score = 0;
         this.level = 1;
+        this.lastEnemySpawn = 0;
+        this.spawnInterval = 1000; // milliseconds
         console.log('GameState initialized successfully');
     }
 
@@ -33,26 +35,66 @@ class GameState {
         // Update player
         this.player.update();
 
-        // Update projectiles
+        // Update and check projectiles
         for (let i = this.projectiles.length - 1; i >= 0; i--) {
             this.projectiles[i].update();
-            if (this.projectiles[i].isOffscreen()) {
+            
+            // Check projectile-enemy collisions
+            for (let j = this.enemies.length - 1; j >= 0; j--) {
+                if (this.checkCollision(this.projectiles[i], this.enemies[j])) {
+                    // Remove both projectile and enemy
+                    this.projectiles.splice(i, 1);
+                    this.enemies.splice(j, 1);
+                    this.score += 10;
+                    if (sounds.hit) sounds.hit.play();
+                    
+                    // Level up every 100 points
+                    if (this.score % 100 === 0) {
+                        this.level++;
+                        this.spawnInterval = Math.max(200, 1000 - (this.level * 50));
+                        if (sounds.collect) sounds.collect.play();
+                    }
+                    break;
+                }
+            }
+            
+            // Remove offscreen projectiles
+            if (i >= 0 && this.projectiles[i] && this.projectiles[i].isOffscreen()) {
                 this.projectiles.splice(i, 1);
             }
         }
 
-        // Update enemies
+        // Update and check enemies
         for (let i = this.enemies.length - 1; i >= 0; i--) {
             this.enemies[i].update();
+            
+            // Check enemy-player collision
+            if (this.checkCollision(this.enemies[i], this.player)) {
+                this.enemies.splice(i, 1);
+                this.player.health -= 10;
+                if (sounds.hit) sounds.hit.play();
+                continue;
+            }
+            
+            // Remove offscreen enemies
             if (this.enemies[i].isOffscreen()) {
                 this.enemies.splice(i, 1);
             }
         }
 
-        // Spawn enemies
-        if (frameCount % 60 === 0 && this.enemies.length < 5 + this.level) {
+        // Spawn enemies based on time and level
+        let currentTime = millis();
+        if (currentTime - this.lastEnemySpawn > this.spawnInterval && 
+            this.enemies.length < 5 + this.level) {
             this.spawnEnemy();
+            this.lastEnemySpawn = currentTime;
         }
+    }
+
+    checkCollision(obj1, obj2) {
+        if (!obj1 || !obj2) return false;
+        let distance = dist(obj1.x, obj1.y, obj2.x, obj2.y);
+        return distance < (obj1.size + obj2.size) / 2;
     }
 
     draw() {
@@ -92,23 +134,34 @@ class Player {
         this.speed = 5;
         this.health = 100;
         this.size = 30;
+        this.keys = {
+            left: false,
+            right: false,
+            up: false,
+            down: false
+        };
+        this.sprite = sprites.plaqueBugA; // Use sprite if available
     }
 
     update() {
-        // Move with arrow keys or WASD
-        if (keyIsDown(LEFT_ARROW) || keyIsDown(65)) this.x -= this.speed;
-        if (keyIsDown(RIGHT_ARROW) || keyIsDown(68)) this.x += this.speed;
-        if (keyIsDown(UP_ARROW) || keyIsDown(87)) this.y -= this.speed;
-        if (keyIsDown(DOWN_ARROW) || keyIsDown(83)) this.y += this.speed;
+        // Move based on key states
+        if (this.keys.left) this.x -= this.speed;
+        if (this.keys.right) this.x += this.speed;
+        if (this.keys.up) this.y -= this.speed;
+        if (this.keys.down) this.y += this.speed;
 
         // Keep player in bounds
-        this.x = constrain(this.x, 0, width);
-        this.y = constrain(this.y, 0, height);
+        this.x = constrain(this.x, this.size/2, width - this.size/2);
+        this.y = constrain(this.y, this.size/2, height - this.size/2);
     }
 
     draw() {
-        fill(0, 255, 0);
-        circle(this.x, this.y, this.size);
+        if (this.sprite) {
+            image(this.sprite, this.x - this.size/2, this.y - this.size/2, this.size, this.size);
+        } else {
+            fill(0, 255, 0);
+            circle(this.x, this.y, this.size);
+        }
     }
 }
 
@@ -118,6 +171,7 @@ class Projectile {
         this.y = y;
         this.speed = 10;
         this.size = 10;
+        this.sprite = sprites.sugarCrystalA; // Use sprite if available
     }
 
     update() {
@@ -125,8 +179,12 @@ class Projectile {
     }
 
     draw() {
-        fill(255, 255, 0);
-        circle(this.x, this.y, this.size);
+        if (this.sprite) {
+            image(this.sprite, this.x - this.size/2, this.y - this.size/2, this.size, this.size);
+        } else {
+            fill(255, 255, 0);
+            circle(this.x, this.y, this.size);
+        }
     }
 
     isOffscreen() {
@@ -140,6 +198,7 @@ class Enemy {
         this.y = y;
         this.speed = random(2, 4);
         this.size = 20;
+        this.sprite = sprites.foodParticleA; // Use sprite if available
     }
 
     update() {
@@ -147,8 +206,12 @@ class Enemy {
     }
 
     draw() {
-        fill(255, 0, 0);
-        circle(this.x, this.y, this.size);
+        if (this.sprite) {
+            image(this.sprite, this.x - this.size/2, this.y - this.size/2, this.size, this.size);
+        } else {
+            fill(255, 0, 0);
+            circle(this.x, this.y, this.size);
+        }
     }
 
     isOffscreen() {
@@ -528,14 +591,55 @@ function mousePressed() {
 }
 
 function keyPressed() {
-    console.log('Key pressed:', key);
-    if (key === 'p' || key === 'P') {
-        if (gameState === 'playing') {
-            gameState = 'paused';
-            console.log('Game paused');
-        } else if (gameState === 'paused') {
-            gameState = 'playing';
-            console.log('Game resumed');
+    if (game && game.player) {
+        switch(keyCode) {
+            case LEFT_ARROW:
+            case 65: // A
+                game.player.keys.left = true;
+                break;
+            case RIGHT_ARROW:
+            case 68: // D
+                game.player.keys.right = true;
+                break;
+            case UP_ARROW:
+            case 87: // W
+                game.player.keys.up = true;
+                break;
+            case DOWN_ARROW:
+            case 83: // S
+                game.player.keys.down = true;
+                break;
+            case 80: // P
+                if (gameState === 'playing') {
+                    gameState = 'paused';
+                } else if (gameState === 'paused') {
+                    gameState = 'playing';
+                }
+                break;
+        }
+    }
+    return false;
+}
+
+function keyReleased() {
+    if (game && game.player) {
+        switch(keyCode) {
+            case LEFT_ARROW:
+            case 65: // A
+                game.player.keys.left = false;
+                break;
+            case RIGHT_ARROW:
+            case 68: // D
+                game.player.keys.right = false;
+                break;
+            case UP_ARROW:
+            case 87: // W
+                game.player.keys.up = false;
+                break;
+            case DOWN_ARROW:
+            case 83: // S
+                game.player.keys.down = false;
+                break;
         }
     }
     return false;
