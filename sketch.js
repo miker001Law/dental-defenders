@@ -16,6 +16,146 @@ let sounds = {};
 let sprites = {};
 let loadingComplete = false;
 
+// Game state and entity classes
+class GameState {
+    constructor() {
+        console.log('Initializing GameState...');
+        this.player = new Player(width/2, height/2);
+        this.enemies = [];
+        this.projectiles = [];
+        this.powerUps = [];
+        this.score = 0;
+        this.level = 1;
+        console.log('GameState initialized successfully');
+    }
+
+    update() {
+        // Update player
+        this.player.update();
+
+        // Update projectiles
+        for (let i = this.projectiles.length - 1; i >= 0; i--) {
+            this.projectiles[i].update();
+            if (this.projectiles[i].isOffscreen()) {
+                this.projectiles.splice(i, 1);
+            }
+        }
+
+        // Update enemies
+        for (let i = this.enemies.length - 1; i >= 0; i--) {
+            this.enemies[i].update();
+            if (this.enemies[i].isOffscreen()) {
+                this.enemies.splice(i, 1);
+            }
+        }
+
+        // Spawn enemies
+        if (frameCount % 60 === 0 && this.enemies.length < 5 + this.level) {
+            this.spawnEnemy();
+        }
+    }
+
+    draw() {
+        // Draw player
+        this.player.draw();
+
+        // Draw projectiles
+        this.projectiles.forEach(p => p.draw());
+
+        // Draw enemies
+        this.enemies.forEach(e => e.draw());
+
+        // Draw score
+        this.drawScore();
+    }
+
+    spawnEnemy() {
+        let x = random(width);
+        let y = 0;
+        this.enemies.push(new Enemy(x, y));
+    }
+
+    drawScore() {
+        fill(0);
+        textSize(24);
+        textAlign(LEFT, TOP);
+        text(`Score: ${this.score}`, 10, 10);
+        text(`Level: ${this.level}`, 10, 40);
+        text(`Health: ${this.player.health}`, 10, 70);
+    }
+}
+
+class Player {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.speed = 5;
+        this.health = 100;
+        this.size = 30;
+    }
+
+    update() {
+        // Move with arrow keys or WASD
+        if (keyIsDown(LEFT_ARROW) || keyIsDown(65)) this.x -= this.speed;
+        if (keyIsDown(RIGHT_ARROW) || keyIsDown(68)) this.x += this.speed;
+        if (keyIsDown(UP_ARROW) || keyIsDown(87)) this.y -= this.speed;
+        if (keyIsDown(DOWN_ARROW) || keyIsDown(83)) this.y += this.speed;
+
+        // Keep player in bounds
+        this.x = constrain(this.x, 0, width);
+        this.y = constrain(this.y, 0, height);
+    }
+
+    draw() {
+        fill(0, 255, 0);
+        circle(this.x, this.y, this.size);
+    }
+}
+
+class Projectile {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.speed = 10;
+        this.size = 10;
+    }
+
+    update() {
+        this.y -= this.speed;
+    }
+
+    draw() {
+        fill(255, 255, 0);
+        circle(this.x, this.y, this.size);
+    }
+
+    isOffscreen() {
+        return this.y < 0;
+    }
+}
+
+class Enemy {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.speed = random(2, 4);
+        this.size = 20;
+    }
+
+    update() {
+        this.y += this.speed;
+    }
+
+    draw() {
+        fill(255, 0, 0);
+        circle(this.x, this.y, this.size);
+    }
+
+    isOffscreen() {
+        return this.y > height;
+    }
+}
+
 function preload() {
     gameState = 'loading';  // Force loading state
     console.log('Loading sprites...');
