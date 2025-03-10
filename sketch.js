@@ -256,55 +256,76 @@ function drawError() {
 }
 
 function updateGame() {
-    // Update game state
-    let previousHealth = game.player.health;
-    game.update();
-    
-    // Check for health loss
-    if (game.player.health < previousHealth) {
-        if (sounds.hit) sounds.hit.play();
-    }
-    
-    // Draw game
-    game.draw();
-    
-    // Debug info in console
-    if (frameCount % 60 === 0) {
-        console.log('Game State:', {
-            playerPos: { x: game.player.x, y: game.player.y },
-            monsters: game.monsters.length,
-            projectiles: game.projectiles.length,
-            powerUps: game.powerUps.length,
-            score: game.score,
-            health: game.player.health
-        });
-    }
-    
-    // Check for game over
-    if (game.player.health <= 0) {
-        gameState = 'gameOver';
-        if (sounds.gameOver) sounds.gameOver.play();
+    try {
+        console.log('Starting game update...');
+        // Update game state
+        let previousHealth = game.player.health;
+        game.update();
+        
+        // Check for health loss
+        if (game.player.health < previousHealth) {
+            if (sounds.hit) sounds.hit.play();
+        }
+        
+        // Draw game
+        game.draw();
+        
+        // Debug info in console
+        if (frameCount % 60 === 0) {
+            console.log('Game State:', {
+                playerPos: { x: game.player.x, y: game.player.y },
+                monsters: game.monsters.length,
+                projectiles: game.projectiles.length,
+                powerUps: game.powerUps.length,
+                score: game.score,
+                health: game.player.health
+            });
+        }
+        
+        // Check for game over
+        if (game.player.health <= 0) {
+            gameState = 'gameOver';
+            if (sounds.gameOver) sounds.gameOver.play();
+        }
+        console.log('Game update complete');
+    } catch (error) {
+        console.error('Error during game update:', error);
+        gameState = 'error';
     }
 }
 
 function resetGame() {
+    console.log('Starting game reset...');
     gameState = 'menu';
-    game = new GameState();
-    // Clear all game arrays
-    if (game) {
-        game.enemies = [];
-        game.projectiles = [];
-        game.powerUps = [];
-        game.score = 0;
-        game.level = 1;
-        game.player.health = 100;
+    
+    try {
+        console.log('Creating new GameState instance...');
+        game = new GameState();
+        console.log('GameState created successfully');
+        
+        // Clear all game arrays
+        if (game) {
+            console.log('Clearing game arrays...');
+            game.enemies = [];
+            game.projectiles = [];
+            game.powerUps = [];
+            game.score = 0;
+            game.level = 1;
+            game.player.health = 100;
+            console.log('Game arrays cleared successfully');
+        }
+    } catch (error) {
+        console.error('Error during game reset:', error);
+        gameState = 'error';
     }
-    console.log('Game fully reset');
+    console.log('Game reset complete');
 }
 
 function mousePressed() {
     console.log('Mouse pressed event triggered');
     console.log('Current state:', gameState);
+    console.log('Loading complete:', loadingComplete);
+    console.log('Game instance exists:', !!game);
     
     if (!loadingComplete) {
         console.log('Still loading assets...');
@@ -313,42 +334,51 @@ function mousePressed() {
 
     // Initialize audio on first interaction
     initializeAudio().then(() => {
+        console.log('Audio initialized successfully');
         switch(gameState) {
             case 'menu':
+                console.log('Starting game from menu...');
                 resetGame();
                 gameState = 'playing';
                 if (sounds.collect) sounds.collect.play();
-                console.log('Game started');
+                console.log('Game started successfully');
                 break;
             case 'playing':
+                console.log('Firing projectile...');
                 if (game && game.projectiles) {
                     game.projectiles.push(new Projectile(game.player.x, game.player.y));
                     if (sounds.shoot) sounds.shoot.play();
-                    console.log('Shot fired');
+                    console.log('Shot fired successfully');
+                } else {
+                    console.error('Game or projectiles array not initialized');
                 }
                 break;
             case 'gameOver':
+                console.log('Restarting from game over...');
                 resetGame();
                 if (sounds.collect) sounds.collect.play();
-                console.log('Returning to menu');
+                console.log('Returned to menu');
                 break;
         }
     }).catch(error => {
-        console.warn('Audio initialization failed:', error);
+        console.error('Audio initialization failed:', error);
         // Continue with game even if audio fails
         switch(gameState) {
             case 'menu':
+                console.log('Starting game without audio...');
                 if (loadingComplete) {
                     resetGame();
                     gameState = 'playing';
                 }
                 break;
             case 'playing':
+                console.log('Firing projectile without audio...');
                 if (game && game.projectiles) {
                     game.projectiles.push(new Projectile(game.player.x, game.player.y));
                 }
                 break;
             case 'gameOver':
+                console.log('Restarting without audio...');
                 resetGame();
                 break;
         }
