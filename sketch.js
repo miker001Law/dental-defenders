@@ -16,19 +16,64 @@ let sounds = {};
 let sprites = {};
 
 function preload() {
-    // Load enemy sprites
-    sprites.foodParticleA = loadImage('https://i.imgur.com/IyNI9ef.png');
-    sprites.foodParticleB = loadImage('https://i.imgur.com/lcw8rTI.png');
-    sprites.sugarCrystalA = loadImage('https://i.imgur.com/gctFhAV.png');
-    sprites.sugarCrystalB = loadImage('https://i.imgur.com/ITuCGKM.png');
-    sprites.plaqueBugA = loadImage('https://i.imgur.com/vNptk1S.png');
-    sprites.plaqueBugB = loadImage('https://i.imgur.com/Xl8yMmN.png');
-    sprites.cavityBugA = loadImage('https://i.imgur.com/JozuFWL.png');
-    sprites.cavityBugB = loadImage('https://i.imgur.com/x7UILxw.png');
-    sprites.sugarBugA = loadImage('https://i.imgur.com/RgVqSTG.png');
-    sprites.sugarBugB = loadImage('https://i.imgur.com/NuVgQJ9.png');
-    
+    // Load enemy sprites with error handling
+    const spriteUrls = {
+        foodParticleA: 'https://i.imgur.com/IyNI9ef.png',
+        foodParticleB: 'https://i.imgur.com/lcw8rTI.png',
+        sugarCrystalA: 'https://i.imgur.com/gctFhAV.png',
+        sugarCrystalB: 'https://i.imgur.com/ITuCGKM.png',
+        plaqueBugA: 'https://i.imgur.com/vNptk1S.png',
+        plaqueBugB: 'https://i.imgur.com/Xl8yMmN.png',
+        cavityBugA: 'https://i.imgur.com/JozuFWL.png',
+        cavityBugB: 'https://i.imgur.com/x7UILxw.png',
+        sugarBugA: 'https://i.imgur.com/RgVqSTG.png',
+        sugarBugB: 'https://i.imgur.com/NuVgQJ9.png'
+    };
+
     console.log('Loading sprites...');
+    
+    // Create default colored rectangle as fallback
+    const createFallbackSprite = () => {
+        let img = createImage(50, 50);
+        img.loadPixels();
+        for (let i = 0; i < img.pixels.length; i += 4) {
+            img.pixels[i] = 255;   // R
+            img.pixels[i+1] = 0;   // G
+            img.pixels[i+2] = 0;   // B
+            img.pixels[i+3] = 255; // A
+        }
+        img.updatePixels();
+        return img;
+    };
+
+    // Load all sprites with Promise.all
+    Promise.all(
+        Object.entries(spriteUrls).map(([key, url]) => {
+            return new Promise((resolve) => {
+                let img = createImg(url, '', () => {
+                    sprites[key] = loadImage(img.elt.src, () => {
+                        console.log(`Successfully loaded sprite: ${key}`);
+                        img.remove();
+                        resolve();
+                    }, () => {
+                        console.error(`Failed to load sprite ${key}`);
+                        sprites[key] = createFallbackSprite();
+                        img.remove();
+                        resolve();
+                    });
+                }, () => {
+                    console.error(`Failed to create img element for ${key}`);
+                    sprites[key] = createFallbackSprite();
+                    resolve();
+                });
+                img.hide(); // Hide the temporary image element
+            });
+        })
+    ).then(() => {
+        console.log('All sprites loaded or fallbacks created');
+    }).catch(error => {
+        console.error('Error in sprite loading:', error);
+    });
 }
 
 // Separate sound loading from preload to make it optional
@@ -90,17 +135,24 @@ function initializeAudio() {
         window.audioInitialized = true;
         console.log('Initializing audio system...');
         
-        try {
-            userStartAudio().then(() => {
-                loadGameSounds();
-                console.log('Audio system initialized');
-            }).catch(error => {
-                console.warn('Audio system initialization failed:', error);
-            });
-        } catch (error) {
-            console.warn('Audio setup failed:', error);
-        }
+        return new Promise((resolve, reject) => {
+            try {
+                // Create audio context only after user interaction
+                getAudioContext().resume().then(() => {
+                    loadGameSounds();
+                    console.log('Audio system initialized successfully');
+                    resolve();
+                }).catch(error => {
+                    console.warn('Audio context resume failed:', error);
+                    reject(error);
+                });
+            } catch (error) {
+                console.warn('Audio setup failed:', error);
+                reject(error);
+            }
+        });
     }
+    return Promise.resolve(); // Already initialized
 }
 
 function draw() {
@@ -232,27 +284,42 @@ function mousePressed() {
     console.log('Current state:', gameState);
     
     // Initialize audio on first interaction
-    initializeAudio();
-    
-    switch(gameState) {
-        case 'menu':
-            resetGame();
-            gameState = 'playing';
-            if (sounds.collect) sounds.collect.play();
-            console.log('Game started');
-            break;
-        case 'playing':
-            // Shoot projectile
-            game.projectiles.push(new Projectile(game.player.x, game.player.y));
-            if (sounds.shoot) sounds.shoot.play();
-            console.log('Shot fired');
-            break;
-        case 'gameOver':
-            resetGame();
-            if (sounds.collect) sounds.collect.play();
-            console.log('Returning to menu');
-            break;
-    }
+    initializeAudio().then(() => {
+        switch(gameState) {
+            case 'menu':
+                resetGame();
+                gameState = 'playing';
+                if (sounds.collect) sounds.collect.play();
+                console.log('Game started');
+                break;
+            case 'playing':
+                // Shoot projectile
+                game.projectiles.push(new Projectile(game.player.x, game.player.y));
+                if (sounds.shoot) sounds.shoot.play();
+                console.log('Shot fired');
+                break;
+            case 'gameOver':
+                resetGame();
+                if (sounds.collect) sounds.collect.play();
+                console.log('Returning to menu');
+                break;
+        }
+    }).catch(error => {
+        console.warn('Audio initialization failed:', error);
+        // Continue with game even if audio fails
+        switch(gameState) {
+            case 'menu':
+                resetGame();
+                gameState = 'playing';
+                break;
+            case 'playing':
+                game.projectiles.push(new Projectile(game.player.x, game.player.y));
+                break;
+            case 'gameOver':
+                resetGame();
+                break;
+        }
+    });
     
     return false;
 }
