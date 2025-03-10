@@ -13,10 +13,18 @@ let connectionStatus = {
 };
 
 function setup() {
+    console.log('Setting up canvas...');
     let canvas = createCanvas(800, 600);
-    canvas.parent('main');
+    canvas.parent('game-container');
     frameRate(60);
-    console.log('Canvas created and setup complete');
+    console.log('Canvas setup complete');
+    
+    // Add click handler directly to canvas
+    canvas.mousePressed(() => {
+        console.log('Canvas click detected');
+        handleGameClick();
+    });
+    
     initializeGame();
 }
 
@@ -51,46 +59,56 @@ async function initializeGame() {
     }
 }
 
+function handleGameClick() {
+    console.log('Handling game click');
+    console.log('Current state before click:', gameState);
+    
+    switch(gameState) {
+        case 'menu':
+            gameState = 'playing';
+            console.log('Changed state to:', gameState);
+            break;
+        case 'playing':
+            gameState = 'menu';
+            console.log('Changed state to:', gameState);
+            break;
+        default:
+            console.log('Click detected but no state change for state:', gameState);
+    }
+}
+
 function draw() {
     background(220);
     
     textSize(32);
     textAlign(CENTER, CENTER);
-    fill(0);
     
     switch(gameState) {
         case 'loading':
+            fill(0);
             text('Loading...', width/2, height/2);
             break;
         case 'menu':
-            text('Dental Defenders\n\nClick to Start', width/2, height/2);
+            fill(0);
+            text('Dental Defenders', width/2, height/2 - 40);
+            fill(0, 100, 255);
+            text('Click to Start', width/2, height/2 + 40);
             break;
         case 'playing':
-            text('Game Running\n\nClick anywhere to return to menu', width/2, height/2);
+            fill(0);
+            text('Game Running', width/2, height/2 - 40);
+            fill(0, 100, 255);
+            text('Click to return to menu', width/2, height/2 + 40);
             break;
         case 'error':
             fill(255, 0, 0);
-            text('Error Loading Game\n\nPlease refresh the page', width/2, height/2);
+            text('Error Loading Game', width/2, height/2 - 20);
+            text('Please refresh the page', width/2, height/2 + 20);
             break;
         default:
+            fill(0);
             text(gameState, width/2, height/2);
     }
-}
-
-function mousePressed() {
-    console.log('Mouse pressed event triggered');
-    console.log('Current game state:', gameState);
-    
-    if (gameState === 'menu') {
-        console.log('Transitioning from menu to playing state');
-        gameState = 'playing';
-    } else if (gameState === 'playing') {
-        console.log('Transitioning from playing to menu state');
-        gameState = 'menu';
-    }
-    
-    console.log('New game state:', gameState);
-    return false;
 }
 
 function mouseClicked() {

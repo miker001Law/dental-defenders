@@ -8,27 +8,48 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/addons/p5.sound.min.js"></script>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script>
-        const { createClient } = supabase;
+        window.onload = function() {
+            console.log('Window loaded');
+            window.supabaseClient = supabase.createClient;
+            console.log('Supabase client initialized');
+        }
     </script>
     <script src="config.js"></script>
     <script src="sketch.js"></script>
-    <link rel="stylesheet" href="style.css">
     <style>
         body {
             margin: 0;
+            padding: 0;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
             background-color: #f0f0f0;
         }
+        main {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 800px;
+            height: 600px;
+        }
         canvas {
             border: 2px solid #333;
+            margin: auto;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
-    <main>
-    </main>
+    <main id="game-container"></main>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM fully loaded');
+            const gameContainer = document.getElementById('game-container');
+            gameContainer.addEventListener('click', function(e) {
+                console.log('Click detected on game container');
+            });
+        });
+    </script>
 </body>
 </html>
