@@ -31,28 +31,9 @@ function setup() {
 async function initializeGame() {
     try {
         console.log('Starting game initialization...');
-        if (window.supabaseClient) {
-            supabase = window.supabaseClient(
-                SUPABASE_CONFIG.SUPABASE_URL,
-                SUPABASE_CONFIG.SUPABASE_KEY
-            );
-            
-            connectionStatus.isConnected = true;
-            connectionStatus.lastSync = Date.now();
-            console.log('Successfully connected to Supabase');
-            
-            // Initialize managers
-            authManager = new AuthManager(supabase);
-            dataManager = new GameDataManager(supabase);
-            progressManager = new ProgressManager(supabase);
-            syncManager = new SyncManager();
-            
-            gameState = 'menu';
-            console.log('Game initialized, current state:', gameState);
-        } else {
-            console.error('Supabase client not initialized');
-            gameState = 'error';
-        }
+        // Skip Supabase initialization for now
+        gameState = 'menu';
+        console.log('Game initialized, current state:', gameState);
     } catch (error) {
         console.error('Failed to initialize:', error);
         gameState = 'error';
