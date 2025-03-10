@@ -4,14 +4,20 @@ const SUPABASE_CONFIG = {
     SUPABASE_KEY: 'your-anon-key'  // Replace with your actual public anon key
 };
 
+// Game Configuration
+const GAME_CONFIG = {
+    OFFLINE_MODE: true,
+    DEBUG: true
+};
+
 // Game States
 const GAME_STATES = {
     LOADING: 'loading',
-    AUTH: 'auth',
     MENU: 'menu',
     PLAYING: 'playing',
     PAUSED: 'paused',
-    GAME_OVER: 'gameOver'
+    GAME_OVER: 'gameOver',
+    ERROR: 'error'
 };
 
 // Database Tables
@@ -24,7 +30,7 @@ const DB_TABLES = {
 
 // Error Messages
 const ERROR_MESSAGES = {
-    CONNECTION: 'Unable to connect to the game server. Please check your internet connection.',
+    CONNECTION: 'Unable to connect to the game server. Playing in offline mode.',
     AUTH: 'Authentication failed. Please try again.',
     SAVE: 'Failed to save game progress. Your progress will be saved when connection is restored.',
     LOAD: 'Failed to load game data. Please try again.'

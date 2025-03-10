@@ -25,19 +25,9 @@ function setup() {
         handleGameClick();
     });
     
-    initializeGame();
-}
-
-async function initializeGame() {
-    try {
-        console.log('Starting game initialization...');
-        // Skip Supabase initialization for now
-        gameState = 'menu';
-        console.log('Game initialized, current state:', gameState);
-    } catch (error) {
-        console.error('Failed to initialize:', error);
-        gameState = 'error';
-    }
+    // Start in menu state since we're in offline mode
+    gameState = 'menu';
+    console.log('Game initialized in offline mode');
 }
 
 function handleGameClick() {
