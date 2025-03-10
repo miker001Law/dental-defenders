@@ -323,18 +323,23 @@ function loadGameSounds() {
 
 function setup() {
     console.log('Setting up canvas...');
+    
+    // Create and position canvas
     let canvas = createCanvas(800, 600);
     canvas.parent('game-container');
     
-    // Set up basic drawing parameters
+    // Basic p5.js setup
     frameRate(60);
     imageMode(CENTER);
     rectMode(CENTER);
     textAlign(CENTER, CENTER);
     
-    // Initialize game
+    // Initialize game state
+    gameState = 'loading';
+    loadingComplete = false;
     game = new GameState();
-    console.log('Game initialized');
+    
+    console.log('Setup complete');
 }
 
 // Initialize sound system on first user interaction
@@ -364,6 +369,8 @@ function initializeAudio() {
 }
 
 function draw() {
+    // Clear background each frame
+    clear();
     background(220);
     
     switch(gameState) {
