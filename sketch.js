@@ -175,14 +175,29 @@ function updateGame() {
     }
 }
 
+function resetGame() {
+    gameState = 'menu';
+    game = new GameState();
+    // Clear all game arrays
+    if (game) {
+        game.enemies = [];
+        game.projectiles = [];
+        game.powerUps = [];
+        game.score = 0;
+        game.level = 1;
+        game.player.health = 100;
+    }
+    console.log('Game fully reset');
+}
+
 function mousePressed() {
     console.log('Mouse pressed event triggered');
     console.log('Current state:', gameState);
     
     switch(gameState) {
         case 'menu':
+            resetGame();
             gameState = 'playing';
-            game = new GameState();
             if (sounds.collect) sounds.collect.play();
             console.log('Game started');
             break;
@@ -193,7 +208,7 @@ function mousePressed() {
             console.log('Shot fired');
             break;
         case 'gameOver':
-            gameState = 'menu';
+            resetGame();
             if (sounds.collect) sounds.collect.play();
             console.log('Returning to menu');
             break;
@@ -635,3 +650,19 @@ class SyncManager {
         }
     }
 }
+
+// Add window event listener for page visibility changes
+document.addEventListener('visibilitychange', function() {
+    if (document.hidden) {
+        // Page is hidden (tab switched, minimized, etc.)
+        console.log('Game paused due to page visibility change');
+        if (gameState === 'playing') {
+            gameState = 'paused';
+        }
+    }
+});
+
+// Add window unload handler
+window.addEventListener('beforeunload', function() {
+    resetGame();
+});
