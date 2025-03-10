@@ -1,0 +1,1824 @@
+/*
+FUTURE MODIFICATION AREAS BASED ON USER FEEDBACK
+
+1. Game Balance & Difficulty
+   - Coin spawn rates and values
+   - Enemy movement patterns and speeds
+   - Health and damage values
+   - Level progression difficulty
+   - Age-specific difficulty adjustments
+
+2. Reward System
+   - Coupon values and frequency
+   - Product categories and age restrictions
+   - Weekly prize values
+   - Achievement requirements
+   - Reward notification system
+
+3. Educational Content
+   - Message effectiveness by age group
+   - Tutorial system implementation
+   - Dental care tips and timing
+   - Learning outcome tracking
+   - Parent educational resources
+
+4. User Interface
+   - Parent dashboard features
+   - Child navigation improvements
+   - Age-appropriate instructions
+   - Visual feedback enhancements
+   - Accessibility features
+
+5. Social & Engagement
+   - Family challenges
+   - Friend leaderboards
+   - Progress sharing
+   - Community features
+   - Multiple profile support
+
+6. Shopping Experience
+   - Product recommendation system
+   - Parent approval workflow
+   - Redemption process
+   - Product usage instructions
+   - Age-appropriate categories
+
+7. Parent Communication
+   - Notification preferences
+   - Progress reporting
+   - Dental care scheduling
+   - Achievement alerts
+   - Shopping approvals
+
+8. Performance Metrics
+   - Play session duration
+   - Achievement completion rates
+   - Age group engagement
+   - Learning effectiveness
+   - Parent participation rates
+*/
+
+// External Resource Configuration
+const SUPABASE_CONFIG = {
+    SUPABASE_URL: 'https://hprqllrqdzuuqzcrwsuc.supabase.co',
+    SUPABASE_KEY: 'your-anon-key-here'
+};
+
+const IMAGES = {
+    enemies: {
+        cavity: 'https://i.imgur.com/KTnU6vR.png',  // Dental Defender Pink A
+        food: 'https://i.imgur.com/IyNI9ef.png',    // Food Particle Man A
+        sugar: 'https://i.imgur.com/gctFhAV.png',   // Sugar Crystal Man Game Piece A
+        plaque: 'https://i.imgur.com/vNptk1S.png',  // Plaque Bug Game Piece A
+        coin: 'https://i.imgur.com/eye1Flr.png'     // Tooth Fairy Game Coin
+    },
+    tools: {
+        toothpaste: 'https://i.imgur.com/5qFyu2D.png',  // Dental Defender Blue A
+        mouthwash: 'https://i.imgur.com/hqQriTH.png',   // Mouthwash Spray A
+        floss: 'https://i.imgur.com/GUamjB2.png',       // Floss Whip A
+        toothbrush: 'https://i.imgur.com/bRcj4Uh.png'   // Oral-B Brush Head A
+    },
+    projectiles: {
+        toothpaste: 'https://i.imgur.com/rbIbA0C.png',  // Toothpaste Bullet Aa
+        mouthwash: 'https://i.imgur.com/kahRz2h.png',   // Mouthwash Spray B
+        floss: 'https://i.imgur.com/Pz0Pmx9.png',       // Floss Whip B
+        toothbrush: 'https://i.imgur.com/6WdCNBM.png'   // Toothbrush Bullet B
+    },
+    stickers: {
+        coinCollector: 'https://i.imgur.com/iz7bMvh.png',  // Tooth Fairy Sticker
+        cavityHunter: {
+            default: 'https://i.imgur.com/KTnU6vR.png',    // Dental Defender Pink A
+            alternate: 'https://i.imgur.com/wTJydau.png'   // Dental Defender Pink B
+        },
+        sugarFighter: 'https://i.imgur.com/Jj4eRt8.png',  // Sugar Warrior Sticker
+        plaqueBuster: 'https://i.imgur.com/42DPqDg.png',  // Plaque Buster Sticker
+        perfectSmile: {
+            default: 'https://i.imgur.com/LuC7H0M.png',    // Perfect Smile Sticker
+            alternate: 'https://i.imgur.com/Rg649So.png'   // Perfect Smile Sticker 02
+        }
+    },
+    mascots: {
+        pink: 'https://i.imgur.com/KTnU6vR.png',    // Pink defender mascot
+        blue: 'https://i.imgur.com/5qFyu2D.png'     // Blue defender mascot A
+    }
+};
+
+// Image variables
+let cavityImg, foodImg, sugarImg, plaqueImg, coinImg;
+let toothpasteToolImg, mouthwashToolImg, flossToolImg, toothbrushToolImg;
+let toothpasteProjectileImg, mouthwashProjectileImg, flossProjectileImg, toothbrushProjectileImg;
+let pinkMascotImg, blueMascotImg;
+
+// Sound variables
+let coinSound, popSound, winSound, levelUpSound, cheerSound;
+
+// Game variables
+let player;
+let enemies = [];
+let projectiles = [];
+let particles = [];
+let messages = [];
+let tools = [];
+let score = 0;
+let health = 100;
+let currentTool = 0;
+let upgradePoints = 0;
+let currentLevel = 0;
+let enemiesToSpawn;
+let spawnTimer = 0;
+let spawnRate;
+let playSessions = 0;
+let playerAge = 5; // Default to younger age group
+
+// Message sets for different age groups
+const youngMessages = {
+    cavity: [
+        "Brush brush brush!",
+        "Clean teeth are happy!",
+        "Bye bye, cavity!",
+        "Keep brushing!"
+    ],
+    food: [
+        "All clean now!",
+        "No more food!",
+        "Clean and shiny!",
+        "Sparkly teeth!"
+    ],
+    sugar: [
+        "No sugar bugs!",
+        "Healthy teeth!",
+        "Sugar go away!",
+        "Strong teeth win!"
+    ],
+    plaque: [
+        "Floss is fun!",
+        "Clean and fresh!",
+        "Plaque is gone!",
+        "Happy teeth dance!"
+    ],
+    coin: [
+        "Tooth Fairy magic!",
+        "Special star!",
+        "Magic smile power!",
+        "Fairy friend!"
+    ],
+    levelUp: [
+        "Time to brush!",
+        "Count to 120!",
+        "Brush all teeth!",
+        "Visit dentist soon!"
+    ]
+};
+
+const olderMessages = {
+    cavity: [
+        "Brush twice daily for 2 minutes!",
+        "Brushing prevents cavities!",
+        "Protect your teeth from decay!",
+        "Healthy brushing habits win!"
+    ],
+    food: [
+        "Clean after every meal!",
+        "No food between teeth!",
+        "Brush away food particles!",
+        "Keep your smile clean!"
+    ],
+    sugar: [
+        "Sugar causes cavities!",
+        "Rinse after sweet treats!",
+        "Protect against sugar damage!",
+        "Choose healthy snacks!"
+    ],
+    plaque: [
+        "Floss daily to remove plaque!",
+        "Plaque causes gum disease!",
+        "Clean between your teeth!",
+        "Healthy gums, happy smile!"
+    ],
+    coin: [
+        "Great dental care habits!",
+        "The Tooth Fairy rewards clean teeth!",
+        "Your dentist would be proud!",
+        "Keep up the great work!"
+    ],
+    levelUp: [
+        "Brush for 2 minutes, twice a day!",
+        "Remember to floss every day!",
+        "Visit your dentist every 6 months!",
+        "Rinse with mouthwash to finish!"
+    ]
+};
+
+function getAgeAppropriateMessage(type, messageType) {
+    const messages = playerAge <= 5 ? youngMessages : olderMessages;
+    return random(messages[messageType]);
+}
+
+function checkDentalVisitReminder() {
+    if (playSessions >= 5 && playSessions % 5 === 0) {
+        messages.push({
+            text: playerAge <= 5 ? 
+                "Time to see your friendly dentist!" :
+                "Remember to schedule your dental check-up every 6 months!",
+            timer: 240,
+            isSpecial: true
+        });
+    }
+}
+
+// Achievement system
+let achievements = {
+    coinCollector: { count: 0, required: 5, name: "Tooth Fairy's Friend", sticker: 'coinCollector', earned: false },
+    cavityHunter: { count: 0, required: 10, name: "Cavity Crusher", sticker: 'cavityHunter', earned: false },
+    sugarFighter: { count: 0, required: 15, name: "Sugar Warrior", sticker: 'sugarFighter', earned: false },
+    plaqueBuster: { count: 0, required: 8, name: "Plaque Patrol", sticker: 'plaqueBuster', earned: false },
+    perfectSmile: { count: 0, required: 3, name: "Perfect Smile", sticker: 'perfectSmile', earned: false }
+};
+
+let stickerImages = {};
+
+// Coin variables
+let coinSpawnChance = 0.05; // 5% chance to spawn a coin
+let lastCoinSpawnTime = 0;
+let minCoinSpawnInterval = 300; // Minimum frames between coin spawns
+
+// Level configurations
+let levels = [
+    { totalEnemies: 10, spawnRate: 60, speedMultiplier: 1 },
+    { totalEnemies: 15, spawnRate: 45, speedMultiplier: 1.2 },
+    { totalEnemies: 20, spawnRate: 30, speedMultiplier: 1.5 }
+];
+
+// Base Tool class
+class Tool {
+    constructor(type) {
+        this.type = type;
+        this.x = width / 2;
+        this.y = height - 50;
+        this.width = 50;
+        this.height = 50;
+        this.level = 1;
+    }
+
+    draw() {
+        push();
+        imageMode(CENTER);
+        let img;
+        switch(this.type) {
+            case 'toothpaste':
+                img = toothpasteToolImg;
+                break;
+            case 'mouthwash':
+                img = mouthwashToolImg;
+                break;
+            case 'floss':
+                img = flossToolImg;
+                break;
+            case 'toothbrush':
+                img = toothbrushToolImg;
+                break;
+        }
+        if (img) {
+            image(img, this.x, this.y, this.width, this.height);
+        }
+        pop();
+    }
+
+    fire() {
+        // Overridden by subclasses
+    }
+}
+
+// Tool subclasses
+class ToothpasteTube extends Tool {
+    constructor() {
+        super('toothpaste');
+    }
+
+    fire() {
+        projectiles.push(new Projectile(this.x, this.y - 25, 'toothpaste', this.level));
+    }
+}
+
+class MouthwashBottle extends Tool {
+    constructor() {
+        super('mouthwash');
+    }
+
+    fire() {
+        projectiles.push(new Projectile(this.x, this.y - 30, 'mouthwash', this.level));
+    }
+}
+
+class FlossPick extends Tool {
+    constructor() {
+        super('floss');
+    }
+
+    fire() {
+        projectiles.push(new Projectile(this.x, this.y - 20, 'floss', this.level));
+    }
+}
+
+class ElectricToothbrush extends Tool {
+    constructor() {
+        super('toothbrush');
+    }
+
+    fire() {
+        projectiles.push(new Projectile(this.x, this.y - 50, 'toothbrush', this.level));
+    }
+}
+
+// Enemy class
+class Enemy {
+    constructor(type) {
+        this.type = type;
+        this.x = random(width);
+        this.y = 0;
+        this.speed = this.type === 'coin' ? 
+            random(2, 4) * levels[currentLevel].speedMultiplier : 
+            random(1, 3) * levels[currentLevel].speedMultiplier;
+        this.width = this.type === 'coin' ? 40 : 30;
+        this.height = this.type === 'coin' ? 40 : 30;
+        this.health = this.type === 'plaque' ? 2 : 1;
+        this.value = this.type === 'coin' ? 30 : 10; // Coins worth triple points
+    }
+
+    update() {
+        this.y += this.speed;
+        if (this.type === 'coin') {
+            // Make coins move in a wavy pattern
+            this.x += sin(frameCount * 0.1) * 2;
+            this.x = constrain(this.x, 0, width);
+        }
+    }
+
+    draw() {
+        imageMode(CENTER);
+        if (this.type === 'cavity') {
+            image(cavityImg, this.x, this.y, this.width, this.height);
+        } else if (this.type === 'food') {
+            image(foodImg, this.x, this.y, this.width, this.height);
+        } else if (this.type === 'sugar') {
+            image(sugarImg, this.x, this.y, this.width, this.height);
+        } else if (this.type === 'plaque') {
+            image(plaqueImg, this.x, this.y, this.width + 10, this.height + 10);
+        } else if (this.type === 'coin') {
+            image(coinImg, this.x, this.y, this.width, this.height);
+        }
+        imageMode(CORNER);
+    }
+
+    hit(damage) {
+        this.health -= damage;
+        return this.health <= 0;
+    }
+}
+
+// Projectile class for effects
+class Projectile {
+    constructor(x, y, type, level) {
+        this.x = x;
+        this.y = y;
+        this.type = type;
+        this.speed = 5;
+        this.width = 10;
+        this.height = 10;
+        this.damage = level * 5;
+        this.trailTimer = 0;
+    }
+
+    update() {
+        this.y -= this.speed;
+        // Add rainbow trail
+        this.trailTimer++;
+        if (this.trailTimer >= 2) { // Add particle every 2 frames
+            particles.push(new Particle(this.x, this.y, true));
+            this.trailTimer = 0;
+        }
+    }
+
+    draw() {
+        imageMode(CENTER);
+        if (this.type === 'toothpaste') {
+            image(toothpasteProjectileImg, this.x, this.y, this.width, this.height);
+        } else if (this.type === 'mouthwash') {
+            image(mouthwashProjectileImg, this.x, this.y, this.width, this.height);
+        } else if (this.type === 'floss') {
+            image(flossProjectileImg, this.x, this.y, this.width, this.height);
+        } else if (this.type === 'toothbrush') {
+            image(toothbrushProjectileImg, this.x, this.y, this.width, this.height);
+        }
+        imageMode(CORNER);
+    }
+}
+
+// Particle class for effects
+class Particle {
+    constructor(x, y, isTrail = false) {
+        this.x = x;
+        this.y = y;
+        this.isTrail = isTrail;
+        this.size = isTrail ? random(3, 8) : random(5, 15);
+        this.color = isTrail ? this.getRainbowColor() : color(random(255), random(255), random(255));
+        this.alpha = 255;
+        this.vx = isTrail ? random(-1, 1) : random(-2, 2);
+        this.vy = isTrail ? random(-1, 1) : random(-2, 2);
+    }
+
+    getRainbowColor() {
+        let hue = (frameCount * 2) % 360;
+        colorMode(HSB, 360, 100, 100, 255);
+        let c = color(hue, 80, 100);
+        colorMode(RGB, 255, 255, 255, 255);
+        return c;
+    }
+
+    update() {
+        if (this.isTrail) {
+            this.x += this.vx;
+            this.y += this.vy;
+            this.alpha -= 15; // Fade faster for trails
+        } else {
+        this.size += 0.5;
+        this.alpha -= 5;
+        }
+    }
+
+    draw() {
+        noStroke();
+        if (this.isTrail) {
+            this.color = this.getRainbowColor();
+        }
+        fill(this.color, this.alpha);
+        ellipse(this.x, this.y, this.size);
+    }
+}
+
+// Game states
+let gameState = 'menu'; // menu, game, leaderboard, shop, profile
+let icons = {};
+let leaderboard = [];
+let currentProfile = null;
+
+// Add these variables at the top with other variables
+let profileInput;
+let createProfileButton;
+let errorMessage = '';
+let weeklyTopPlayers = [];
+let lastWeekReset = Date.now();
+let parentMode = false;
+let weeklyRewardInfo = {
+    description: "Weekly winners receive special coupons for dental care products!",
+    nextDrawDate: null
+};
+
+// Add age-specific achievements
+let ageSpecificAchievements = {
+    younger: {
+        brushingPro: { count: 0, required: 5, name: "Brushing Pro", description: "Brush away 5 cavity monsters!", earned: false },
+        healthySnacker: { count: 0, required: 3, name: "Healthy Snacker", description: "Avoid sugar 3 times!", earned: false }
+    },
+    older: {
+        dentalExpert: { count: 0, required: 10, name: "Dental Expert", description: "Use all tools effectively", earned: false },
+        plaqueWarrior: { count: 0, required: 8, name: "Plaque Warrior", description: "Remove tough plaque buildup", earned: false }
+    }
+};
+
+// Enhanced dental tips by age group
+const dentalTips = {
+    younger: [
+        "Brush your teeth like a superhero!",
+        "Count to 30 for each side of your mouth",
+        "Make circles with your toothbrush",
+        "Smile big in the mirror to check your teeth",
+        "Use a timer for brushing time"
+    ],
+    older: [
+        "Brush for two minutes, twice daily",
+        "Floss between all teeth daily",
+        "Use fluoride toothpaste for cavity protection",
+        "Replace your toothbrush every 3 months",
+        "Limit sugary snacks and drinks"
+    ],
+    parent: [
+        "Supervise brushing for children under 7",
+        "Use a pea-sized amount of fluoride toothpaste",
+        "Schedule regular dental check-ups every 6 months",
+        "Consider sealants for cavity prevention",
+        "Encourage healthy snacking habits"
+    ]
+};
+
+// Add these variables at the top with other variables
+let parentEmail = '';
+let parentEmailInput;
+let parentEmailButton;
+let rewardNotifications = [];
+let secureRewards = {
+    categories: [
+        { id: 'toothbrush', name: 'Kids Toothbrushes', minAge: 3, maxAge: 8 },
+        { id: 'toothpaste', name: 'Children\'s Toothpaste', minAge: 3, maxAge: 8 },
+        { id: 'floss', name: 'Kid-Friendly Floss Picks', minAge: 3, maxAge: 8 },
+        { id: 'mouthwash', name: 'Children\'s Mouthwash', minAge: 6, maxAge: 8 }
+    ],
+    couponValues: [5, 10, 15, 20], // Dollar values for different achievement levels
+    weeklyPrizeValue: 25 // Weekly winner prize value
+};
+
+// Add these variables at the top with other variables
+let birthdayInput;
+let playerBirthday = null;
+let lastBirthdayCheck = null;
+
+// Add at the top with other variables
+let isMuted = false;
+let soundsLoaded = false;
+
+// Add at the top with other variables
+let transitionAlpha = 0;
+let targetGameState = null;
+let isTransitioning = false;
+
+// Global variables
+let supabase;
+let authUI;
+let inputFields = {};
+let authManager;
+let dataManager;
+let progressManager;
+let syncManager;
+
+function createPlaceholderIcons() {
+    // Play icon
+    let playIcon = createGraphics(50, 50);
+    playIcon.background(220);
+    playIcon.fill(50);
+    playIcon.noStroke();
+    playIcon.triangle(15, 10, 40, 25, 15, 40);
+    icons.play = playIcon;
+    
+    // Leaderboard icon
+    let leaderboardIcon = createGraphics(50, 50);
+    leaderboardIcon.background(220);
+    leaderboardIcon.stroke(50);
+    leaderboardIcon.strokeWeight(2);
+    leaderboardIcon.line(15, 15, 15, 35);
+    leaderboardIcon.line(25, 10, 25, 40);
+    leaderboardIcon.line(35, 20, 35, 30);
+    icons.leaderboard = leaderboardIcon;
+    
+    // Shop icon
+    let shopIcon = createGraphics(50, 50);
+    shopIcon.background(220);
+    shopIcon.stroke(50);
+    shopIcon.strokeWeight(2);
+    shopIcon.noFill();
+    shopIcon.rect(10, 20, 30, 20);
+    shopIcon.line(15, 20, 15, 15);
+    shopIcon.line(35, 20, 35, 15);
+    shopIcon.line(15, 15, 35, 15);
+    icons.shop = shopIcon;
+    
+    // Profile icon
+    let profileIcon = createGraphics(50, 50);
+    profileIcon.background(220);
+    profileIcon.fill(50);
+    profileIcon.noStroke();
+    profileIcon.circle(25, 20, 15);
+    profileIcon.arc(25, 45, 30, 30, PI, TWO_PI);
+    icons.profile = profileIcon;
+}
+
+function preload() {
+    // Skip sound loading for now
+    coinSound = null;
+    popSound = null;
+    winSound = null;
+    levelUpSound = null;
+    cheerSound = null;
+    
+    // Load images
+    cavityImg = loadImage(IMAGES.enemies.cavity);
+    foodImg = loadImage(IMAGES.enemies.food);
+    sugarImg = loadImage(IMAGES.enemies.sugar);
+    plaqueImg = loadImage(IMAGES.enemies.plaque);
+    coinImg = loadImage(IMAGES.enemies.coin);
+    
+    // Load tool images
+    toothpasteToolImg = loadImage(IMAGES.tools.toothpaste);
+    mouthwashToolImg = loadImage(IMAGES.tools.mouthwash);
+    flossToolImg = loadImage(IMAGES.tools.floss);
+    toothbrushToolImg = loadImage(IMAGES.tools.toothbrush);
+    
+    // Load projectile images
+    toothpasteProjectileImg = loadImage(IMAGES.projectiles.toothpaste);
+    mouthwashProjectileImg = loadImage(IMAGES.projectiles.mouthwash);
+    flossProjectileImg = loadImage(IMAGES.projectiles.floss);
+    toothbrushProjectileImg = loadImage(IMAGES.projectiles.toothbrush);
+    
+    // Load sticker images
+    stickerImages = {
+        coinCollector: loadImage(IMAGES.stickers.coinCollector),
+        cavityHunter: {
+            default: loadImage(IMAGES.stickers.cavityHunter.default),
+            alternate: loadImage(IMAGES.stickers.cavityHunter.alternate)
+        },
+        sugarFighter: loadImage(IMAGES.stickers.sugarFighter),
+        plaqueBuster: loadImage(IMAGES.stickers.plaqueBuster),
+        perfectSmile: {
+            default: loadImage(IMAGES.stickers.perfectSmile.default),
+            alternate: loadImage(IMAGES.stickers.perfectSmile.alternate)
+        }
+    };
+    
+    // Load mascot images
+    pinkMascotImg = loadImage(IMAGES.mascots.pink);
+    blueMascotImg = loadImage(IMAGES.mascots.blue);
+    
+    // Create placeholder icons
+    createPlaceholderIcons();
+}
+
+function createSticker(text, color) {
+    let sticker = createGraphics(50, 50);
+    switch(color) {
+        case 'gold':
+            sticker.background(255, 215, 0);
+            break;
+        case 'red':
+            sticker.background(255, 99, 71);
+            break;
+        case 'green':
+            sticker.background(50, 205, 50);
+            break;
+        case 'blue':
+            sticker.background(30, 144, 255);
+            break;
+        case 'purple':
+            sticker.background(147, 112, 219);
+            break;
+    }
+    sticker.fill(255);
+    sticker.textSize(20);
+    sticker.textAlign(CENTER, CENTER);
+    sticker.text(text, 25, 25);
+    return sticker;
+}
+
+function checkAchievements(enemyType) {
+    if (!currentProfile) return;
+    
+    // Check regular achievements
+    if (enemyType === 'coin' && !achievements.coinCollector.earned) {
+        achievements.coinCollector.count++;
+        if (achievements.coinCollector.count >= achievements.coinCollector.required) {
+            earnAchievement('coinCollector');
+        }
+    } else if (enemyType === 'cavity' && !achievements.cavityHunter.earned) {
+        achievements.cavityHunter.count++;
+        if (achievements.cavityHunter.count >= achievements.cavityHunter.required) {
+            earnAchievement('cavityHunter');
+        }
+    }
+    
+    // Check age-specific achievements
+    let ageAchievements = currentProfile.ageAchievements;
+    if (playerAge <= 5) {
+        if (enemyType === 'cavity' && !ageAchievements.brushingPro.earned) {
+            ageAchievements.brushingPro.count++;
+            if (ageAchievements.brushingPro.count >= ageAchievements.brushingPro.required) {
+                earnAgeAchievement('brushingPro');
+            }
+        }
+        if (enemyType === 'sugar' && !ageAchievements.healthySnacker.earned) {
+            ageAchievements.healthySnacker.count++;
+            if (ageAchievements.healthySnacker.count >= ageAchievements.healthySnacker.required) {
+                earnAgeAchievement('healthySnacker');
+            }
+        }
+    } else {
+        if (!ageAchievements.dentalExpert.earned) {
+            // Check if all tools have been used
+            let toolsUsed = new Set(projectiles.map(p => p.type));
+            if (toolsUsed.size >= 4) {
+                earnAgeAchievement('dentalExpert');
+            }
+        }
+        if (enemyType === 'plaque' && !ageAchievements.plaqueWarrior.earned) {
+            ageAchievements.plaqueWarrior.count++;
+            if (ageAchievements.plaqueWarrior.count >= ageAchievements.plaqueWarrior.required) {
+                earnAgeAchievement('plaqueWarrior');
+            }
+        }
+    }
+}
+
+function earnAchievement(type) {
+    if (!achievements[type].earned) {
+        achievements[type].earned = true;
+        playSound(cheerSound);
+        
+        // Determine reward value based on achievement
+        let rewardValue = secureRewards.couponValues[0]; // Base reward
+        if (type === 'perfectSmile') rewardValue = secureRewards.couponValues[3];
+        else if (type === 'cavityHunter') rewardValue = secureRewards.couponValues[2];
+        else if (type === 'sugarFighter') rewardValue = secureRewards.couponValues[1];
+        
+        notifyParent('achievement', rewardValue);
+        
+        messages.push({
+            text: "New Achievement: " + achievements[type].name + "!",
+            timer: 180,
+            isAchievement: true
+        });
+        
+        // Create celebration particles
+        for (let i = 0; i < 30; i++) {
+            let p = new Particle(width/2, height/2);
+            p.color = color(255, 215, 0);
+            p.size = random(10, 25);
+            particles.push(p);
+        }
+    }
+}
+
+function earnAgeAchievement(type) {
+    if (!currentProfile) return;
+    
+    let achievement = currentProfile.ageAchievements[type];
+    if (!achievement.earned) {
+        achievement.earned = true;
+        playSound(cheerSound);
+        messages.push({
+            text: "New Achievement: " + achievement.name + "!",
+            timer: 180,
+            isAchievement: true
+        });
+        // Create celebration particles
+        for (let i = 0; i < 30; i++) {
+            let p = new Particle(width/2, height/2);
+            p.color = color(255, 215, 0);
+            p.size = random(10, 25);
+            particles.push(p);
+        }
+    }
+}
+
+function setup() {
+    createCanvas(800, 600);
+    createPlaceholderIcons();
+    
+    // Initialize Supabase using the global supabase object
+    supabase = supabase.createClient(
+        SUPABASE_CONFIG.SUPABASE_URL,
+        SUPABASE_CONFIG.SUPABASE_KEY
+    );
+    
+    // Initialize managers
+    authManager = new AuthManager(supabase);
+    dataManager = new GameDataManager(supabase);
+    authUI = new AuthUI();
+    progressManager = new ProgressManager(supabase);
+    syncManager = new SyncManager();
+    
+    // Start auto-sync
+    dataManager.startAutoSync();
+    syncManager.startAutoSync();
+    
+    // Create input fields
+    inputFields = {
+        email: createInput(''),
+        password: createInput('', 'password'),
+        childName: createInput(''),
+        age: createInput('')
+    };
+    
+    // Position input fields (initially hidden)
+    Object.values(inputFields).forEach(input => {
+        input.position(-1000, -1000); // Hide off-screen initially
+        input.style('font-size', '14px');
+        input.style('padding', '5px');
+    });
+    
+    // Initialize tools
+    tools.push(new ToothpasteTube());
+    tools.push(new MouthwashBottle());
+    tools.push(new FlossPick());
+    tools.push(new ElectricToothbrush());
+    player = tools[currentTool];
+
+    // Initialize level
+    enemiesToSpawn = levels[currentLevel].totalEnemies;
+    spawnRate = levels[currentLevel].spawnRate;
+}
+
+function draw() {
+    background(220);
+    authUI.draw();
+
+    // Handle transitions first
+    if (isTransitioning) {
+        if (transitionAlpha < 255) {
+            // Fade out
+            transitionAlpha += 15;
+            if (transitionAlpha >= 255) {
+                // Change state when fully faded out
+                gameState = targetGameState;
+                if (gameState === 'game') {
+                    resetGame();
+                }
+                // Start fade in
+                transitionAlpha = 255;
+            }
+        } else {
+            // Fade in
+            transitionAlpha -= 15;
+            if (transitionAlpha <= 0) {
+                isTransitioning = false;
+                targetGameState = null;
+            }
+        }
+    }
+
+    // Draw current state
+    if (gameState === 'menu') {
+        drawMenu();
+    } else if (gameState === 'game') {
+        background(220, 245, 255);
+        
+        if (isLooping()) {
+            // Update and draw player
+            player.x = constrain(mouseX, player.width / 2, width - player.width / 2);
+            player.draw();
+
+            // Spawn enemies
+            if (enemiesToSpawn > 0) {
+                spawnTimer++;
+                if (spawnTimer >= spawnRate) {
+                    // Check if we can spawn a coin
+                    let canSpawnCoin = frameCount - lastCoinSpawnTime >= minCoinSpawnInterval;
+                    let willSpawnCoin = canSpawnCoin && random() < coinSpawnChance;
+                    
+                    if (willSpawnCoin) {
+                        enemies.push(new Enemy('coin'));
+                        lastCoinSpawnTime = frameCount;
+                    } else {
+                        let enemyTypes = ['cavity', 'food', 'sugar', 'plaque'];
+                        enemies.push(new Enemy(random(enemyTypes)));
+                    }
+                    enemiesToSpawn--;
+                    spawnTimer = 0;
+                }
+            }
+
+            // Update and draw enemies
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                enemies[i].update();
+                enemies[i].draw();
+                if (enemies[i].y > height) {
+                    if (enemies[i].type !== 'coin') {  // Only lose health for non-coin enemies
+                        health -= 10;
+                    }
+                    enemies.splice(i, 1);
+                }
+            }
+
+            // Update and draw projectiles
+            for (let i = projectiles.length - 1; i >= 0; i--) {
+                projectiles[i].update();
+                projectiles[i].draw();
+                if (projectiles[i].y < 0) {
+                    projectiles.splice(i, 1);
+                }
+            }
+
+            // Check collisions
+            for (let p = projectiles.length - 1; p >= 0; p--) {
+                for (let e = enemies.length - 1; e >= 0; e--) {
+                    if (dist(projectiles[p].x, projectiles[p].y, enemies[e].x, enemies[e].y) < 20) {
+                        if (enemies[e].hit(projectiles[p].damage)) {
+                            score += enemies[e].value;
+                            if (score % 100 === 0) {
+                                upgradePoints++;
+                                playSound(levelUpSound);
+                                messages.push({ 
+                                    text: getAgeAppropriateMessage(enemies[e].type, 'levelUp'), 
+                                    timer: 180, 
+                                    isSpecial: true 
+                                });
+                            }
+                            
+                            let messageText = getAgeAppropriateMessage(enemies[e].type, enemies[e].type);
+                            playSound(popSound);
+                            
+                            messages.push({ 
+                                text: messageText, 
+                                timer: 120,
+                                isSpecial: enemies[e].type === 'coin'
+                            });
+                            
+                            checkAchievements(enemies[e].type);
+                            enemies.splice(e, 1);
+                        }
+                        projectiles.splice(p, 1);
+                        break;
+                    }
+                }
+            }
+
+            // Update and draw particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].update();
+                particles[i].draw();
+                if (particles[i].alpha <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+
+            // Check level completion
+            if (enemies.length === 0 && enemiesToSpawn === 0) {
+                currentLevel++;
+                if (currentLevel < levels.length) {
+                    enemiesToSpawn = levels[currentLevel].totalEnemies;
+                    spawnRate = levels[currentLevel].spawnRate;
+                    messages.push({
+                        text: `Level ${currentLevel + 1} Start!`,
+                        timer: 180,
+                        isSpecial: true
+                    });
+                } else {
+                    gameOver(true); // Win condition
+                }
+            }
+        }
+
+        // Draw messages
+        textAlign(CENTER);
+        for (let i = messages.length - 1; i >= 0; i--) {
+            let msg = messages[i];
+            let y = height / 2 - i * 30;
+            
+            // Message animation and styling
+            let alpha = (msg.timer / 120) * 255;
+            let yOffset = (1 - msg.timer / 120) * -20;
+            let size = 20 * (1 + (1 - msg.timer / 120) * 0.5);
+            
+            if (msg.isAchievement) {
+                textSize(size + 4);
+                strokeWeight(4);
+                stroke(255, 215, 0, alpha);
+                fill(255, alpha);
+                text(msg.text, width / 2, y + yOffset);
+            } else if (msg.isSpecial) {
+                textSize(size + 2);
+                strokeWeight(3);
+                stroke(255, 192, 203, alpha);
+                fill(255, alpha);
+                text(msg.text, width / 2, y + yOffset);
+            } else {
+                textSize(size);
+                strokeWeight(2);
+                stroke(100, 149, 237, alpha);
+                fill(255, alpha);
+                text(msg.text, width / 2, y + yOffset);
+            }
+            
+            msg.timer--;
+            if (msg.timer <= 0) {
+                messages.splice(i, 1);
+            }
+        }
+        textAlign(LEFT);
+
+        // Draw UI
+        fill(0);
+        textSize(20);
+        text(`Score: ${score}`, 10, 30);
+        text(`Health:`, 10, 60);
+        fill(255, 0, 0);
+        rect(70, 40, health * 2, 20);
+        fill(0);
+        text(`Level: ${currentLevel + 1}`, 10, 90);
+        text(`Upgrades: ${upgradePoints}`, 10, 120);
+
+        // Game over check
+        if (health <= 0) {
+            gameOver(false); // Loss condition
+        }
+    } else if (gameState === 'leaderboard') {
+        drawLeaderboard();
+    } else if (gameState === 'shop') {
+        drawShop();
+    } else if (gameState === 'profile') {
+        drawProfile();
+    }
+    
+    // Always draw navigation bar on top
+    drawNavigationBar();
+    
+    // Draw transition overlay last
+    if (isTransitioning) {
+        fill(20, 24, 35, transitionAlpha);
+        noStroke();
+        rect(0, 0, width, height);
+    }
+}
+
+function drawNavigationBar() {
+    // Dark background for nav bar
+    fill(20, 24, 35);
+    noStroke();
+    rect(0, height - 70, width, 70);
+    
+    let iconSize = 40;
+    let spacing = width / 5;
+    let y = height - iconSize - 15;
+    
+    // Draw icons with cyan glow when active
+    for (let i = 0; i < 4; i++) {
+        let x = spacing * (i + 1);
+        let isActive = false;
+        
+        switch(i) {
+            case 0: isActive = gameState === 'game'; break;
+            case 1: isActive = gameState === 'leaderboard'; break;
+            case 2: isActive = gameState === 'shop'; break;
+            case 3: isActive = gameState === 'profile'; break;
+        }
+        
+        if (isActive) {
+            drawingContext.shadowBlur = 15;
+            drawingContext.shadowColor = 'rgba(0, 255, 255, 0.5)';
+            fill(0, 255, 255);
+        } else {
+            drawingContext.shadowBlur = 0;
+            fill(100);
+        }
+        
+        // Draw icon
+        imageMode(CENTER);
+        let icon;
+        switch(i) {
+            case 0: icon = icons.play; break;
+            case 1: icon = icons.leaderboard; break;
+            case 2: icon = icons.shop; break;
+            case 3: icon = icons.profile; break;
+        }
+        image(icon, x, y, iconSize, iconSize);
+        
+        // Draw label
+    textAlign(CENTER);
+        textSize(12);
+        let label = ['Play', 'Leaderboard', 'Shop', 'Profile'][i];
+        text(label, x, height - 5);
+    }
+    
+    // Draw sound toggle button
+    let soundX = 30;
+    let soundY = y;
+    drawingContext.shadowBlur = isMuted ? 0 : 15;
+    drawingContext.shadowColor = 'rgba(0, 255, 255, 0.5)';
+    fill(isMuted ? color(255, 0, 0) : color(0, 255, 255));
+    circle(soundX, soundY, 40);
+    fill(255);
+    textAlign(CENTER, CENTER);
+    textSize(12);
+    text(isMuted ? 'MUTED' : 'SOUND', soundX, soundY);
+    
+    // Reset shadow
+    drawingContext.shadowBlur = 0;
+}
+
+function handleNavigationClick() {
+    let iconSize = 40;
+    let spacing = width / 5;
+    
+    if (mouseY > height - 70) {
+        if (mouseX < spacing + iconSize/2) {
+            startTransition('menu');
+        } else if (mouseX < spacing * 2 + iconSize/2) {
+            startTransition('leaderboard');
+        } else if (mouseX < spacing * 3 + iconSize/2) {
+            startTransition('shop');
+        } else if (mouseX < spacing * 4 + iconSize/2) {
+            startTransition('profile');
+        }
+    }
+}
+
+function drawMenu() {
+    // Dark navy background
+    background(20, 24, 35);
+    
+    // Draw mascots
+    let mascotSize = 100; // Reduced from 150
+    let mascotY = height/4 - 60; // Adjusted Y position
+    imageMode(CENTER);
+    
+    // Draw pink mascot with slight rotation
+    push();
+    translate(width/2 - mascotSize/1.5, mascotY);
+    rotate(-PI/16);
+    image(pinkMascotImg, 0, 0, mascotSize, mascotSize);
+    pop();
+    
+    // Draw blue mascot with slight rotation
+    push();
+    translate(width/2 + mascotSize/1.5, mascotY);
+    rotate(PI/16);
+    image(blueMascotImg, 0, 0, mascotSize, mascotSize);
+    pop();
+    
+    // Title section - top third of screen
+    textAlign(CENTER);
+    
+    // Main title "DENTAL DEFENDERS"
+    textSize(60);
+    fill(255);
+    strokeWeight(4);
+    stroke(0);
+    text("DENTAL DEFENDERS", width/2, height/4);
+    
+    // Subtitle with cyan color
+    textSize(32);
+    fill(0, 255, 255);
+    noStroke();
+    text("Save Teeth, Fight Decay!", width/2, height/4 + 50);
+    
+    // High Score display - reduced by 20%
+    let scoreBoxSize = 96; // Reduced from 120
+    let scoreBoxX = width/2 - scoreBoxSize/2;
+    let scoreBoxY = height/2 - 30;
+    
+    // Score box background
+    fill(30, 34, 45);
+    stroke(0, 255, 255);
+    strokeWeight(2);
+    rect(scoreBoxX, scoreBoxY, scoreBoxSize, scoreBoxSize, 15);
+    
+    // Trophy icon and text - adjusted sizes
+    fill(255, 215, 0);
+    noStroke();
+    textSize(20); // Reduced from 24
+    text("🏆", width/2, scoreBoxY + 35);
+    fill(255);
+    text("High Score", width/2, scoreBoxY + 60);
+    text(currentProfile ? currentProfile.highScore : "0", width/2, scoreBoxY + 85);
+    
+    // Age selection text
+    textSize(28);
+    fill(255);
+    text("Select Your Age:", width/2, height - 160);
+    
+    // Age selection buttons
+    let buttonWidth = 100;
+    let buttonHeight = 40;
+    let spacing = 20;
+    let startX = width/2 - (buttonWidth * 3 + spacing * 2)/2;
+    
+    for (let i = 0; i < 6; i++) {
+        let x = startX + (buttonWidth + spacing) * (i % 3);
+        let y = height - 120 + (i >= 3 ? buttonHeight + spacing/2 : 0);
+        
+        // Button background with glow effect
+        drawGlowingButton(x, y, buttonWidth, buttonHeight, i + 3);
+    }
+    
+    // Version number
+    textSize(14);
+    fill(100);
+    text("v1.0.0", width - 50, height - 10);
+}
+
+function drawGlowingButton(x, y, w, h, age) {
+    // Glow effect
+    drawingContext.shadowBlur = 15;
+    drawingContext.shadowColor = 'rgba(0, 255, 255, 0.5)';
+    
+    // Button background
+    fill(30, 34, 45);
+    stroke(0, 255, 255);
+    strokeWeight(2);
+    rect(x, y, w, h, 10);
+    
+    // Button text
+    noStroke();
+    fill(255);
+    textSize(20);
+    textAlign(CENTER, CENTER);
+    text(age + " years", x + w/2, y + h/2);
+    
+    // Reset shadow
+    drawingContext.shadowBlur = 0;
+}
+
+function drawLeaderboard() {
+    background(220, 245, 255);
+    
+    textAlign(CENTER);
+    textSize(40);
+    fill(0);
+    text("Leaderboard", width/2, 80);
+    
+    // Draw leaderboard entries
+    textAlign(LEFT);
+    textSize(24);
+    let y = 150;
+    for (let i = 0; i < leaderboard.length; i++) {
+        let entry = leaderboard[i];
+        fill(i < 3 ? color(255, 215, 0) : 0); // Gold color for top 3
+        text(`${i + 1}. ${entry.name}`, width/4, y);
+        text(entry.score, width * 3/4, y);
+        y += 40;
+    }
+}
+
+function drawShop() {
+    background(220, 245, 255);
+    
+    textAlign(CENTER);
+        textSize(40);
+        fill(0);
+    text(parentMode ? "Parent Resources" : "Dental Care Tips", width/2, 80);
+    
+    // Parent mode toggle button
+    let toggleX = width - 150;
+    let toggleY = 30;
+    fill(parentMode ? color(100, 149, 237) : 200);
+    rect(toggleX, toggleY, 120, 30, 15);
+    fill(255);
+    textSize(14);
+    text(parentMode ? "Kid View" : "Parent View", toggleX + 60, toggleY + 20);
+    
+    if (parentMode) {
+        // Parent section content
+        textSize(20);
+        fill(0);
+        textAlign(LEFT);
+        text("Recommended Products:", 50, 150);
+        text("• Soft-bristled toothbrushes for children", 70, 180);
+        text("• Age-appropriate fluoride toothpaste", 70, 210);
+        text("• Kid-friendly floss picks", 70, 240);
+        text("• Timer for tracking brush duration", 70, 270);
+        
+        // Weekly rewards info
+        textAlign(CENTER);
+        fill(100, 149, 237);
+        text("Weekly Rewards Program", width/2, 320);
+        textSize(16);
+        text(weeklyRewardInfo.description, width/2, 350);
+        if (weeklyRewardInfo.nextDrawDate) {
+            text("Next reward date: " + weeklyRewardInfo.nextDrawDate, width/2, 380);
+        }
+        
+        // Professional tips
+        textAlign(LEFT);
+        fill(0);
+        textSize(20);
+        text("Professional Tips:", 50, 420);
+        textSize(16);
+        dentalTips.parent.forEach((tip, i) => {
+            text("• " + tip, 70, 450 + i * 30);
+        });
+        
+        // Add reward redemption section
+        textAlign(LEFT);
+        fill(0);
+        textSize(20);
+        text("Pending Rewards to Redeem:", 50, 480);
+        
+        let y = 510;
+        currentProfile.pendingRewards.forEach((reward, index) => {
+            if (!reward.isRedeemed) {
+                textSize(16);
+                text(`• $${reward.value} Coupon (Code: ${reward.couponCode})`, 70, y);
+                text(`  Earned from: ${reward.rewardType}`, 70, y + 20);
+                y += 45;
+            }
+        });
+        
+        // Add secure shopping instructions
+        textSize(14);
+        fill(100, 149, 237);
+        text("To redeem: Visit our secure dental care shop using the provided coupon code.", 70, y + 20);
+        text("Only approved children's dental care products are available for purchase.", 70, y + 40);
+    } else {
+        // Kid-friendly tips based on age
+        textSize(24);
+        const tips = playerAge <= 5 ? dentalTips.younger : dentalTips.older;
+        tips.forEach((tip, i) => {
+            text(tip, width/2, 180 + i * 60);
+        });
+        
+        // Fun fact section
+        textSize(20);
+        fill(100, 149, 237);
+        text("Did you know?", width/2, height - 150);
+        textSize(18);
+        text(playerAge <= 5 ? 
+            "Tooth Fairy loves clean, healthy teeth!" :
+            "A healthy smile has 32 teeth when you grow up!", 
+            width/2, height - 120);
+    }
+}
+
+function drawProfile() {
+    background(220, 245, 255);
+    
+    textAlign(CENTER);
+    textSize(40);
+    fill(0);
+    text("My Profile", width/2, 80);
+    
+    if (currentProfile) {
+        hideProfileElements();
+        
+        textSize(30);
+        text(`Welcome, ${currentProfile.name}!`, width/2, 150);
+        
+        // Display scores
+        textSize(24);
+        text(`High Score: ${currentProfile.highScore}`, width/2, 190);
+        text(`Weekly Best: ${currentProfile.weeklyBest}`, width/2, 220);
+        
+        // Display regular achievements
+        text("Your Achievements", width/2, 260);
+        
+        let y = 300;
+        Object.keys(achievements).forEach(key => {
+            if (achievements[key].earned) {
+                image(stickerImages[key], width/2 - 150, y, 50, 50);
+                textAlign(LEFT);
+                text(achievements[key].name, width/2 - 80, y + 35);
+                y += 70;
+            }
+        });
+        
+        // Display age-specific achievements
+        textAlign(CENTER);
+        text("Special Achievements", width/2, y);
+        y += 40;
+        
+        Object.keys(currentProfile.ageAchievements).forEach(key => {
+            let achievement = currentProfile.ageAchievements[key];
+            if (achievement.earned) {
+                textAlign(LEFT);
+                fill(255, 215, 0);
+                text("★ " + achievement.name, width/2 - 80, y);
+                fill(0);
+                textSize(16);
+                text(achievement.description, width/2 - 80, y + 20);
+                y += 50;
+            }
+        });
+        
+        // Display pending rewards
+        if (currentProfile.pendingRewards.length > 0) {
+            textAlign(CENTER);
+            textSize(20);
+            fill(255, 140, 0);
+            text("Pending Rewards", width/2, y + 90);
+            
+            textSize(16);
+            textAlign(LEFT);
+            currentProfile.pendingRewards.forEach((reward, index) => {
+                if (!reward.isRedeemed) {
+                    text(`$${reward.value} Coupon - ${reward.rewardType}`, width/2 - 80, y + 120 + index * 25);
+                }
+            });
+        }
+        
+        // Weekly rewards status
+        textAlign(CENTER);
+        textSize(20);
+        fill(100, 149, 237);
+        text("Weekly Rewards Status", width/2, y + 30);
+        textSize(16);
+        let isTopPlayer = weeklyTopPlayers.some(p => p.name === currentProfile.name);
+        text(isTopPlayer ? 
+            "You're in the running for this week's reward!" : 
+            "Keep playing to earn weekly rewards!", 
+            width/2, y + 60);
+    } else {
+        showProfileElements();
+        textSize(24);
+        text("Create Your Profile", width/2, height/2 - 60);
+        
+        if (errorMessage) {
+            fill(255, 0, 0);
+            textSize(16);
+            text(errorMessage, width/2, height/2 + 90);
+        }
+    }
+}
+
+function mousePressed() {
+    // Check for mute button click first
+    if (mouseY > height - 70 && mouseX < 60) {
+        toggleMute();
+        return;
+    }
+
+    // Handle navigation bar clicks
+    if (mouseY > height - 70) {
+        let spacing = width / 5;
+        let iconSize = 40;
+        
+        // Calculate which icon was clicked
+        for (let i = 0; i < 4; i++) {
+            let x = spacing * (i + 1);
+            if (mouseX > x - iconSize/2 && mouseX < x + iconSize/2) {
+                let newState = '';
+                switch(i) {
+                    case 0: newState = 'game'; break;
+                    case 1: newState = 'leaderboard'; break;
+                    case 2: newState = 'shop'; break;
+                    case 3: newState = 'profile'; break;
+                }
+                if (newState) {
+                    startTransition(newState);
+                    if (newState === 'game') {
+                        resetGame();
+                    }
+                }
+                return;
+            }
+        }
+        return;
+    }
+
+    // Handle menu age selection
+    if (gameState === 'menu') {
+        let buttonWidth = 100;
+        let buttonHeight = 40;
+        let spacing = 20;
+        let startX = width/2 - (buttonWidth * 3 + spacing * 2)/2;
+        
+        for (let i = 0; i < 6; i++) {
+            let x = startX + (buttonWidth + spacing) * (i % 3);
+            let y = height - 120 + (i >= 3 ? buttonHeight + spacing/2 : 0);
+            
+            if (mouseX > x && mouseX < x + buttonWidth &&
+                mouseY > y && mouseY < y + buttonHeight) {
+                playerAge = i + 3;
+                startTransition('game');
+                resetGame();
+                loop(); // Ensure the game loop is running
+                return;
+            }
+        }
+    }
+
+    // Handle game state clicks
+    if (gameState === 'game' && isLooping()) {
+        player.fire();
+    }
+}
+
+function keyPressed() {
+    if (key >= '1' && key <= '4') {
+        currentTool = int(key) - 1;
+        if (currentTool < tools.length) {
+            player = tools[currentTool];
+        }
+    }
+    if (key === 'u' && upgradePoints > 0) {
+        player.level++;
+        upgradePoints--;
+    }
+}
+
+// Add function to handle reward notifications
+function notifyParent(rewardType, value) {
+    if (!currentProfile || !currentProfile.parentEmail) return;
+    
+    let notification = {
+        playerName: currentProfile.name,
+        email: currentProfile.parentEmail,
+        rewardType: rewardType,
+        value: value,
+        date: new Date().toLocaleDateString(),
+        message: generateRewardMessage(rewardType, value),
+        couponCode: generateSecureCouponCode(),
+        isRedeemed: false
+    };
+    
+    currentProfile.pendingRewards.push(notification);
+    rewardNotifications.push(notification);
+}
+
+function generateRewardMessage(type, value) {
+    return `Congratulations! ${currentProfile.name} has earned a $${value} coupon for dental care products through their great performance in Dental Defense! Click the secure link below to redeem this reward for approved children's dental care products.`;
+}
+
+function generateSecureCouponCode() {
+    return 'DD-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+}
+
+function checkBirthday() {
+    if (!currentProfile || !currentProfile.birthday) return;
+    
+    let today = new Date();
+    let birthday = new Date(currentProfile.birthday);
+    
+    // Check if it's the player's birthday
+    if (today.getMonth() === birthday.getMonth() && today.getDate() === birthday.getDate()) {
+        // Only show birthday message once per day
+        if (!lastBirthdayCheck || 
+            lastBirthdayCheck.getDate() !== today.getDate() || 
+            lastBirthdayCheck.getMonth() !== today.getMonth()) {
+            
+            // Birthday celebration
+            messages.push({
+                text: `🎉 Happy Birthday, ${currentProfile.name}! 🎂`,
+                timer: 300,
+                isSpecial: true
+            });
+            
+            // Create birthday particles
+            for (let i = 0; i < 50; i++) {
+                let p = new Particle(random(width), random(height));
+                p.color = color(random([255, 215, 0]), random([192, 215]), random([203, 0]));
+                p.size = random(10, 25);
+                particles.push(p);
+            }
+            
+            // Send birthday notification to parent
+            notifyParent('birthday', 15); // Special birthday reward
+            
+            lastBirthdayCheck = today;
+        }
+    }
+}
+
+// Add these new functions
+function handleSoundError(err) {
+    console.log('Sound loading error:', err);
+}
+
+function toggleMute() {
+    isMuted = !isMuted;
+}
+
+// Update sound playing functions to check for null
+function playSound(sound) {
+    if (sound && !isMuted) {
+        sound.play();
+    }
+}
+
+function gameOver(isWin) {
+    updateLeaderboard();
+    updateWeeklyLeaderboard();
+    
+    // Draw game over screen
+    fill(0, 0, 0, 150);
+    rect(0, 0, width, height);
+    
+    textAlign(CENTER);
+    textSize(40);
+    fill(255);
+    text(isWin ? "You Win!" : "Game Over", width/2, height/2 - 40);
+    
+    textSize(24);
+    text(`Final Score: ${score}`, width/2, height/2 + 10);
+    
+    // Draw reset button
+    let buttonWidth = 200;
+    let buttonHeight = 50;
+    let buttonX = width/2 - buttonWidth/2;
+    let buttonY = height/2 + 50;
+    
+    fill(0, 255, 0);
+    rect(buttonX, buttonY, buttonWidth, buttonHeight, 10);
+    fill(255);
+    textSize(24);
+    text("Play Again", width/2, buttonY + 32);
+    
+    noLoop();
+}
+
+function resetGame() {
+    // Reset game variables
+    score = 0;
+    health = 100;
+    currentLevel = 0;
+    upgradePoints = 0;
+    enemies = [];
+    projectiles = [];
+    particles = [];
+    messages = [];
+    
+    // Reset level variables
+    enemiesToSpawn = levels[currentLevel].totalEnemies;
+    spawnRate = levels[currentLevel].spawnRate;
+    spawnTimer = 0;
+    
+    // Reset tools
+    tools = [
+        new ToothpasteTube(),
+        new MouthwashBottle(),
+        new FlossPick(),
+        new ElectricToothbrush()
+    ];
+    currentTool = 0;
+    player = tools[currentTool];
+    
+    loop(); // Ensure the game loop is running
+}
+
+// Add this new function
+function startTransition(newState) {
+    if (!isTransitioning) {
+        isTransitioning = true;
+        targetGameState = newState;
+        transitionAlpha = 0;
+        if (newState === 'game') {
+            resetGame();
+            loop(); // Ensure the game loop is running
+        }
+    }
+}
+
+class AuthUI {
+    constructor() {
+        this.visible = true;
+        this.mode = 'login'; // 'login' or 'register'
+        this.errorMessage = '';
+        this.inputPositions = {
+            email: { x: 0, y: 0 },
+            password: { x: 0, y: 0 },
+            childName: { x: 0, y: 0 },
+            age: { x: 0, y: 0 }
+        };
+    }
+
+    draw() {
+        if (!this.visible) return;
+
+        push();
+        // Semi-transparent background
+        fill(0, 0, 0, 100);
+        rect(0, 0, width, height);
+
+        // Auth panel
+        fill(255);
+        rectMode(CENTER);
+        rect(width/2, height/2, 400, 500, 20);
+
+        // Title
+        fill(0);
+        textAlign(CENTER);
+        textSize(24);
+        text(this.mode === 'login' ? 'Parent Login' : 'Create Account', 
+             width/2, height/2 - 200);
+
+        // Update input field positions
+        this.updateInputFields();
+
+        // Switch mode button
+        this.drawSwitchModeButton();
+
+        // Submit button
+        this.drawSubmitButton();
+
+        // Error message
+        if (this.errorMessage) {
+            fill(255, 0, 0);
+            textSize(14);
+            text(this.errorMessage, width/2, height/2 + 180);
+        }
+        pop();
+    }
+
+    updateInputFields() {
+        const centerX = width/2 - 100;
+        let startY = height/2 - 150;
+        const spacing = 60;
+
+        // Email field
+        this.positionInputField('email', centerX, startY);
+        fill(0);
+        textAlign(LEFT);
+        textSize(14);
+        text('Email:', centerX, startY - 10);
+
+        // Password field
+        startY += spacing;
+        this.positionInputField('password', centerX, startY);
+        text('Password:', centerX, startY - 10);
+
+        if (this.mode === 'register') {
+            // Child name field
+            startY += spacing;
+            this.positionInputField('childName', centerX, startY);
+            text('Child\'s Name:', centerX, startY - 10);
+
+            // Age field
+            startY += spacing;
+            this.positionInputField('age', centerX, startY);
+            text('Age:', centerX, startY - 10);
+        }
+    }
+
+    positionInputField(fieldName, x, y) {
+        if (inputFields[fieldName]) {
+            inputFields[fieldName].position(x, y);
+            inputFields[fieldName].style('display', 'block');
+            this.inputPositions[fieldName] = { x, y };
+        }
+    }
+
+    drawSwitchModeButton() {
+        // Switch mode button
+        fill(200);
+        rect(width/2, height/2 + 150, 200, 40, 10);
+        fill(0);
+        textAlign(CENTER);
+        textSize(14);
+        text(this.mode === 'login' ? 'Create Account' : 'Back to Login', 
+             width/2, height/2 + 155);
+    }
+
+    drawSubmitButton() {
+        // Submit button
+        fill(100, 150, 255);
+        rect(width/2, height/2 + 100, 200, 40, 10);
+        fill(255);
+        textAlign(CENTER);
+        textSize(16);
+        text(this.mode === 'login' ? 'Login' : 'Register', 
+             width/2, height/2 + 105);
+    }
+
+    hideAllInputs() {
+        Object.values(inputFields).forEach(input => {
+            input.position(-1000, -1000);
+        });
+    }
+}
+
+function mousePressed() {
+    // Handle switch mode button
+    if (mouseY > height/2 + 130 && mouseY < height/2 + 170 &&
+        mouseX > width/2 - 100 && mouseX < width/2 + 100) {
+        authUI.mode = authUI.mode === 'login' ? 'register' : 'login';
+    }
+
+    // Handle submit button
+    if (mouseY > height/2 + 80 && mouseY < height/2 + 120 &&
+        mouseX > width/2 - 100 && mouseX < width/2 + 100) {
+        handleSubmit();
+    }
+}
+
+async function handleSubmit() {
+    const email = inputFields.email.value();
+    const password = inputFields.password.value();
+
+    if (!email || !password) {
+        authUI.errorMessage = 'Please fill in all fields';
+        return;
+    }
+
+    if (authUI.mode === 'login') {
+        try {
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email,
+                password
+            });
+            if (error) throw error;
+            console.log('Logged in successfully!');
+            // We'll handle successful login in the next step
+        } catch (error) {
+            authUI.errorMessage = error.message;
+        }
+    } else {
+        const childName = inputFields.childName.value();
+        const age = parseInt(inputFields.age.value());
+
+        if (!childName || !age) {
+            authUI.errorMessage = 'Please fill in all fields';
+            return;
+        }
+
+        if (age < 3 || age > 12) {
+            authUI.errorMessage = 'Age must be between 3 and 12';
+            return;
+        }
+
+        try {
+            const { data, error } = await supabase.auth.signUp({
+                email,
+                password
+            });
+            if (error) throw error;
+            console.log('Registered successfully!');
+            // We'll handle successful registration in the next step
+        } catch (error) {
+            authUI.errorMessage = error.message;
+        }
+    }
+}
