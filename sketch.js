@@ -11,6 +11,18 @@ let connectionStatus = {
     retryCount: 0,
     maxRetries: 3
 };
+let game;
+let sounds = {};
+
+function preload() {
+    // Load sounds
+    soundFormats('wav');
+    sounds.shoot = loadSound('assets/sounds/pop.wav');
+    sounds.collect = loadSound('assets/sounds/coin-collect.wav');
+    sounds.levelUp = loadSound('assets/sounds/level-up.wav');
+    sounds.win = loadSound('assets/sounds/win.wav');
+    sounds.hit = loadSound('assets/sounds/cheer.wav');
+}
 
 function setup() {
     console.log('Setting up canvas...');
@@ -19,76 +31,134 @@ function setup() {
     frameRate(60);
     console.log('Canvas setup complete');
     
-    // Add click handler directly to canvas
-    canvas.mousePressed(() => {
-        console.log('Canvas click detected');
-        handleGameClick();
-    });
-    
-    // Start in menu state since we're in offline mode
+    // Initialize game
+    game = new GameState();
     gameState = 'menu';
-    console.log('Game initialized in offline mode');
-}
-
-function handleGameClick() {
-    console.log('Handling game click');
-    console.log('Current state before click:', gameState);
-    
-    switch(gameState) {
-        case 'menu':
-            gameState = 'playing';
-            console.log('Changed state to:', gameState);
-            break;
-        case 'playing':
-            gameState = 'menu';
-            console.log('Changed state to:', gameState);
-            break;
-        default:
-            console.log('Click detected but no state change for state:', gameState);
-    }
+    console.log('Game initialized in menu state');
 }
 
 function draw() {
     background(220);
     
-    textSize(32);
-    textAlign(CENTER, CENTER);
-    
     switch(gameState) {
         case 'loading':
-            fill(0);
-            text('Loading...', width/2, height/2);
+            drawLoading();
             break;
         case 'menu':
-            fill(0);
-            text('Dental Defenders', width/2, height/2 - 40);
-            fill(0, 100, 255);
-            text('Click to Start', width/2, height/2 + 40);
+            drawMenu();
             break;
         case 'playing':
-            fill(0);
-            text('Game Running', width/2, height/2 - 40);
-            fill(0, 100, 255);
-            text('Click to return to menu', width/2, height/2 + 40);
+            updateGame();
+            break;
+        case 'paused':
+            drawPaused();
+            break;
+        case 'gameOver':
+            drawGameOver();
             break;
         case 'error':
-            fill(255, 0, 0);
-            text('Error Loading Game', width/2, height/2 - 20);
-            text('Please refresh the page', width/2, height/2 + 20);
+            drawError();
             break;
-        default:
-            fill(0);
-            text(gameState, width/2, height/2);
     }
 }
 
-function mouseClicked() {
-    console.log('Mouse clicked event detected');
+function drawLoading() {
+    textSize(32);
+    textAlign(CENTER, CENTER);
+    fill(0);
+    text('Loading...', width/2, height/2);
+}
+
+function drawMenu() {
+    textSize(32);
+    textAlign(CENTER, CENTER);
+    fill(0);
+    text('Dental Defenders', width/2, height/2 - 40);
+    fill(0, 100, 255);
+    text('Click to Start', width/2, height/2 + 40);
+}
+
+function drawPaused() {
+    // Draw game state in background
+    game.draw();
+    
+    // Draw pause menu
+    fill(0, 0, 0, 127);
+    rect(0, 0, width, height);
+    
+    textSize(32);
+    textAlign(CENTER, CENTER);
+    fill(255);
+    text('PAUSED', width/2, height/2 - 40);
+    textSize(24);
+    text('Press P to Resume', width/2, height/2 + 40);
+}
+
+function drawGameOver() {
+    textSize(32);
+    textAlign(CENTER, CENTER);
+    fill(255, 0, 0);
+    text('Game Over', width/2, height/2 - 60);
+    fill(0);
+    textSize(24);
+    text('Final Score: ' + game.score, width/2, height/2);
+    fill(0, 100, 255);
+    text('Click to Play Again', width/2, height/2 + 60);
+}
+
+function drawError() {
+    textSize(32);
+    textAlign(CENTER, CENTER);
+    fill(255, 0, 0);
+    text('Error Loading Game', width/2, height/2 - 20);
+    text('Please refresh the page', width/2, height/2 + 20);
+}
+
+function updateGame() {
+    // Update game state
+    game.update();
+    
+    // Draw game
+    game.draw();
+    
+    // Check for game over
+    if (game.player.health <= 0) {
+        gameState = 'gameOver';
+        sounds.hit.play();
+    }
+}
+
+function mousePressed() {
+    console.log('Mouse pressed event triggered');
+    console.log('Current state:', gameState);
+    
+    switch(gameState) {
+        case 'menu':
+            gameState = 'playing';
+            game = new GameState();
+            sounds.levelUp.play();
+            break;
+        case 'playing':
+            // Shoot projectile
+            game.projectiles.push(new Projectile(game.player.x, game.player.y));
+            sounds.shoot.play();
+            break;
+        case 'gameOver':
+            gameState = 'menu';
+            break;
+    }
+    
     return false;
 }
 
-function touchStarted() {
-    console.log('Touch event detected');
+function keyPressed() {
+    if (key === 'p' || key === 'P') {
+        if (gameState === 'playing') {
+            gameState = 'paused';
+        } else if (gameState === 'paused') {
+            gameState = 'playing';
+        }
+    }
     return false;
 }
 
