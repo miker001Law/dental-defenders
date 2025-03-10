@@ -58,6 +58,14 @@ class Enemy {
                 this.spriteA = sprites.sugarCrystalA;
                 this.spriteB = sprites.sugarCrystalB;
                 break;
+            case 'sugarBug':
+                this.size = 45;
+                this.health = 75;
+                this.speed = random(3, 5);
+                this.points = 175;
+                this.spriteA = sprites.sugarBugA;
+                this.spriteB = sprites.sugarBugB;
+                break;
             case 'plaque':
                 this.size = 60;
                 this.health = 200;
@@ -123,6 +131,11 @@ class Enemy {
                 // Sugar crystals move in a zigzag pattern
                 this.x += sin(frameCount * 0.1) * 2;
                 this.y += this.speed;
+                break;
+            case 'sugarBug':
+                // Sugar bugs move in a wave pattern
+                this.x += cos(frameCount * 0.08) * 3;
+                this.y += sin(frameCount * 0.05) * 2 + this.speed;
                 break;
             case 'food':
                 // Food particles move in a bouncy pattern
@@ -254,10 +267,13 @@ class GameState {
             // Spawn plaque boss every 2000 points
             this.enemies.push(new Enemy('plaque'));
             this.bossSpawned = true;
-        } else if (roll < 15 + this.level * 2) {
-            // Sugar crystals become more common as level increases
+        } else if (roll < 15) {
+            // Sugar crystals
             this.enemies.push(new Enemy('sugar'));
-        } else if (roll < 30 + this.level * 2) {
+        } else if (roll < 30) {
+            // Sugar bugs
+            this.enemies.push(new Enemy('sugarBug'));
+        } else if (roll < 45) {
             // Food particles
             this.enemies.push(new Enemy('food'));
         } else {

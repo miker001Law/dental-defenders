@@ -25,6 +25,8 @@ function preload() {
     sprites.plaqueBugB = loadImage('https://imgur.com/Xl8yMmN.png');
     sprites.cavityBugA = loadImage('https://i.imgur.com/JozuFWL.png');
     sprites.cavityBugB = loadImage('https://i.imgur.com/x7UILxw.png');
+    sprites.sugarBugA = loadImage('https://imgur.com/RgVqSTG.png');
+    sprites.sugarBugB = loadImage('https://imgur.com/NuVgQJ9.png');
     
     console.log('Loading sprites...');
     
