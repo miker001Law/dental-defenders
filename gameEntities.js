@@ -43,30 +43,44 @@ class Enemy {
         this.type = type;
         this.reset();
         this.setupType();
+        this.animationFrame = 0;
+        this.frameCounter = 0;
+        this.animationSpeed = 15; // Update animation every 15 frames
     }
 
     setupType() {
         switch(this.type) {
             case 'sugar':
-                this.size = 20;
+                this.size = 40;
                 this.health = 50;
                 this.speed = random(4, 6);
-                this.color = color(255, 150, 150);
                 this.points = 150;
+                this.spriteA = sprites.sugarCrystalA;
+                this.spriteB = sprites.sugarCrystalB;
                 break;
             case 'plaque':
-                this.size = 50;
+                this.size = 60;
                 this.health = 200;
                 this.speed = random(1, 2);
-                this.color = color(100, 100, 100);
                 this.points = 300;
+                this.spriteA = sprites.plaqueBugA;
+                this.spriteB = sprites.plaqueBugB;
                 break;
-            default: // basic cavity
-                this.size = 30;
+            case 'food':
+                this.size = 40;
+                this.health = 75;
+                this.speed = random(3, 5);
+                this.points = 125;
+                this.spriteA = sprites.foodParticleA;
+                this.spriteB = sprites.foodParticleB;
+                break;
+            default: // cavity
+                this.size = 45;
                 this.health = 100;
                 this.speed = random(2, 4);
-                this.color = color(255, 0, 0);
                 this.points = 100;
+                this.spriteA = sprites.cavityBugA;
+                this.spriteB = sprites.cavityBugB;
         }
     }
 
@@ -77,39 +91,28 @@ class Enemy {
 
     draw() {
         push();
-        fill(this.color);
+        imageMode(CENTER);
         
-        switch(this.type) {
-            case 'sugar':
-                // Draw sugar bug (diamond shape)
-                beginShape();
-                vertex(this.x, this.y - this.size/2);
-                vertex(this.x + this.size/2, this.y);
-                vertex(this.x, this.y + this.size/2);
-                vertex(this.x - this.size/2, this.y);
-                endShape(CLOSE);
-                break;
-            case 'plaque':
-                // Draw plaque boss (irregular blob)
-                beginShape();
-                for(let i = 0; i < 8; i++) {
-                    let angle = TWO_PI * i / 8;
-                    let rad = this.size * (0.8 + random(0.2));
-                    let px = this.x + cos(angle) * rad;
-                    let py = this.y + sin(angle) * rad;
-                    curveVertex(px, py);
-                }
-                endShape(CLOSE);
-                // Draw health bar
-                let healthPct = this.health / 200;
-                fill(255, 0, 0);
-                rect(this.x - this.size/2, this.y - this.size/2 - 10, this.size, 5);
-                fill(0, 255, 0);
-                rect(this.x - this.size/2, this.y - this.size/2 - 10, this.size * healthPct, 5);
-                break;
-            default:
-                // Basic cavity monster (circle)
-                circle(this.x, this.y, this.size);
+        // Update animation frame
+        this.frameCounter++;
+        if (this.frameCounter >= this.animationSpeed) {
+            this.animationFrame = !this.animationFrame;
+            this.frameCounter = 0;
+        }
+        
+        // Draw the appropriate sprite
+        let sprite = this.animationFrame ? this.spriteA : this.spriteB;
+        if (sprite) {
+            image(sprite, this.x, this.y, this.size, this.size);
+        }
+        
+        // Draw health bar for plaque boss
+        if (this.type === 'plaque') {
+            let healthPct = this.health / 200;
+            fill(255, 0, 0);
+            rect(this.x - this.size/2, this.y - this.size/2 - 10, this.size, 5);
+            fill(0, 255, 0);
+            rect(this.x - this.size/2, this.y - this.size/2 - 10, this.size * healthPct, 5);
         }
         pop();
     }
@@ -117,16 +120,21 @@ class Enemy {
     move() {
         switch(this.type) {
             case 'sugar':
-                // Sugar bugs move in a zigzag pattern
+                // Sugar crystals move in a zigzag pattern
                 this.x += sin(frameCount * 0.1) * 2;
                 this.y += this.speed;
                 break;
+            case 'food':
+                // Food particles move in a bouncy pattern
+                this.y += this.speed;
+                this.x += cos(frameCount * 0.05) * 3;
+                break;
             case 'plaque':
-                // Plaque bosses move slowly but steadily
+                // Plaque bugs move slowly but steadily
                 this.y += this.speed;
                 break;
             default:
-                // Basic enemies move straight down
+                // Cavity bugs move straight down
                 this.y += this.speed;
         }
         return this.y > height + this.size; // Return true if enemy is off screen
@@ -246,11 +254,14 @@ class GameState {
             // Spawn plaque boss every 2000 points
             this.enemies.push(new Enemy('plaque'));
             this.bossSpawned = true;
-        } else if (roll < 20 + this.level * 2) {
-            // Sugar bugs become more common as level increases
+        } else if (roll < 15 + this.level * 2) {
+            // Sugar crystals become more common as level increases
             this.enemies.push(new Enemy('sugar'));
+        } else if (roll < 30 + this.level * 2) {
+            // Food particles
+            this.enemies.push(new Enemy('food'));
         } else {
-            // Basic cavity monsters
+            // Basic cavity bugs
             this.enemies.push(new Enemy('basic'));
         }
     }

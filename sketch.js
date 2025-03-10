@@ -13,18 +13,31 @@ let connectionStatus = {
 };
 let game;
 let sounds = {};
+let sprites = {};
 
 function preload() {
+    // Load enemy sprites
+    sprites.foodParticleA = loadImage('https://imgur.com/IyNI9ef.png');
+    sprites.foodParticleB = loadImage('https://imgur.com/lcw8rTI.png');
+    sprites.sugarCrystalA = loadImage('https://imgur.com/gctFhAV.png');
+    sprites.sugarCrystalB = loadImage('https://imgur.com/ITuCGKM.png');
+    sprites.plaqueBugA = loadImage('https://imgur.com/vNptk1S.png');
+    sprites.plaqueBugB = loadImage('https://imgur.com/Xl8yMmN.png');
+    sprites.cavityBugA = loadImage('https://i.imgur.com/JozuFWL.png');
+    sprites.cavityBugB = loadImage('https://i.imgur.com/x7UILxw.png');
+    
+    console.log('Loading sprites...');
+    
     // Load sounds
-    soundFormats('mp3');
+    soundFormats('wav', 'mp3');
     try {
-        sounds.shoot = loadSound('https://raw.githubusercontent.com/miker001Law/dental-defenders/main/assets/sounds/shoot.mp3');
-        sounds.collect = loadSound('https://raw.githubusercontent.com/miker001Law/dental-defenders/main/assets/sounds/collect.mp3');
-        sounds.hit = loadSound('https://raw.githubusercontent.com/miker001Law/dental-defenders/main/assets/sounds/hit.mp3');
-        sounds.gameOver = loadSound('https://raw.githubusercontent.com/miker001Law/dental-defenders/main/assets/sounds/gameover.mp3');
-        console.log('Sounds loaded successfully');
+        sounds.shoot = loadSound('assets/sounds/shoot.wav');
+        sounds.collect = loadSound('assets/sounds/collect.wav');
+        sounds.hit = loadSound('assets/sounds/hit.wav');
+        sounds.gameOver = loadSound('assets/sounds/gameover.wav');
+        console.log('Attempting to load sounds...');
     } catch (error) {
-        console.warn('Sound loading failed:', error);
+        console.warn('Sound loading failed, continuing without sound:', error);
     }
 }
 
@@ -39,10 +52,16 @@ function setup() {
     game = new GameState();
     console.log('Game initialized in menu state');
     
-    // Set sound volumes
-    Object.values(sounds).forEach(sound => {
+    // Initialize sound settings
+    userStartAudio(); // This helps with browser autoplay policies
+    
+    // Set sound volumes and check if sounds loaded
+    Object.entries(sounds).forEach(([name, sound]) => {
         if (sound && sound.setVolume) {
-            sound.setVolume(0.5);
+            sound.setVolume(0.3);
+            console.log(`Sound loaded successfully: ${name}`);
+        } else {
+            console.warn(`Sound not loaded: ${name}`);
         }
     });
 }
