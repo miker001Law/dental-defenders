@@ -15,7 +15,7 @@ An interactive educational game teaching children about dental hygiene through f
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/YOUR_USERNAME/dental-defenders.git
+git clone https://github.com/miker001Law/dental-defenders.git
 cd dental-defenders
 ```
 
